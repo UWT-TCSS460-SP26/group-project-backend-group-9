@@ -1,0 +1,19 @@
+name: Discord Commits
+
+on: 
+  - push
+
+jobs:
+  disord_test_message:
+    runs-on: ubuntu-latest
+    name: discord commits
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Send message to discord
+        uses: Sniddl/discord-commits@v1.8
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          template: 'author-with-link'
+          include-extras: true
