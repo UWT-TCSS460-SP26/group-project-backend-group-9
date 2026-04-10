@@ -28,7 +28,7 @@ app.get('/hello', (_request: Request, response: Response) => {
 
 app.use(routes);
 app.get('/hello/riley', (_request: Request, response: Response) => {
-  response.json({ message: 'Hello from Riley!' });
+    response.json({ message: 'Hello from Riley!' });
 });
 
 // 404 handler — must be after all routes
