@@ -1,35 +1,35 @@
 openapi: 3.0.3
 info:
-  title: TCSS 460 Group Project API
-  description: |
-    **Team:** [Your Team Name]
-    **Deployed URL:** [Your deployed URL]
+    title: TCSS 460 Group Project API
+    description: |
+        **Team:** [Your Team Name]
+        **Deployed URL:** [Your deployed URL]
 
-    A RESTful API for the TCSS 460 group project.
-  version: 0.1.0
+        A RESTful API for the TCSS 460 group project.
+    version: 0.1.0
 
 servers:
-  - url: http://localhost:3000
-    description: Local development
+    - url: http://localhost:3000
+      description: Local development
 
 tags:
-  - name: General
-    description: General-purpose routes
+    - name: General
+      description: General-purpose routes
 
 paths:
-  /hello:
-    get:
-      tags: [General]
-      summary: Hello
-      description: Returns a greeting message.
-      responses:
-        '200':
-          description: A greeting message
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: 'Hello, TCSS 460!'
+    /hello:
+        get:
+            tags: [General]
+            summary: Hello
+            description: Returns a greeting message.
+            responses:
+                '200':
+                    description: A greeting message
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: 'Hello, TCSS 460!'
