@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
     title: TCSS 460 Group Project API
     description: |
-        **Team:** [Your Team Name]
+        **Team:** Team 9
         **Deployed URL:** [Your deployed URL]
 
         A RESTful API for the TCSS 460 group project.
@@ -17,19 +17,19 @@ tags:
       description: General-purpose routes
 
 paths:
-    /hello:
+    /status:
         get:
             tags: [General]
-            summary: Hello
-            description: Returns a greeting message.
+            summary: Status
+            description: Get the status of the server.
             responses:
                 '200':
-                    description: A greeting message
+                    description: Server is alive.
                     content:
                         application/json:
                             schema:
                                 type: object
                                 properties:
-                                    message:
+                                    status:
                                         type: string
-                                        example: 'Hello, TCSS 460!'
+                                        example: 'Alive'

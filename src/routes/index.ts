@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { helloRoutes } from './hello';
+import { statusRoutes } from './status';
 
 const routes = Router();
 
-routes.use('/hello', helloRoutes);
+routes.use('/status', statusRoutes);
 
 export { routes };
