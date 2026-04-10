@@ -22,14 +22,7 @@ app.get('/openapi.json', (_request: Request, response: Response) => {
 app.use('/api-docs', apiReference({ spec: { url: '/openapi.json' } }));
 
 // Routes
-app.get('/hello', (_request: Request, response: Response) => {
-    response.json({ message: 'Hello, TCSS 460!' });
-});
-
 app.use(routes);
-app.get('/hello/riley', (_request: Request, response: Response) => {
-    response.json({ message: 'Hello from Riley!' });
-});
 
 // 404 handler — must be after all routes
 app.use((_request: Request, response: Response) => {
