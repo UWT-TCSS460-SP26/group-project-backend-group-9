@@ -17,20 +17,20 @@ app.use(logger);
 const specFile = fs.readFileSync('./openapi.yaml', 'utf8');
 const spec = YAML.parse(specFile);
 app.get('/openapi.json', (_request: Request, response: Response) => {
-  response.json(spec);
+    response.json(spec);
 });
 app.use('/api-docs', apiReference({ spec: { url: '/openapi.json' } }));
 
 // Routes
 app.get('/hello', (_request: Request, response: Response) => {
-  response.json({ message: 'Hello, TCSS 460!' });
+    response.json({ message: 'Hello, TCSS 460!' });
 });
 
 app.use(routes);
 
 // 404 handler — must be after all routes
 app.use((_request: Request, response: Response) => {
-  response.status(404).json({ error: 'Route not found' });
+    response.status(404).json({ error: 'Route not found' });
 });
 
 export { app };
