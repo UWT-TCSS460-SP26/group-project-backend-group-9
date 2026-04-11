@@ -33,4 +33,4 @@ API documentation is at [http://localhost:3000/api-docs](http://localhost:3000/a
 
 ## Deployed URL
 
-[Add your deployed URL here]
+https://tcss460-team-9-api-72a4ffcce368.herokuapp.com

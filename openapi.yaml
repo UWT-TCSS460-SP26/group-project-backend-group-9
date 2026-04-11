@@ -3,7 +3,7 @@ info:
     title: TCSS 460 Group Project API
     description: |
         **Team:** Team 9
-        **Deployed URL:** [Your deployed URL]
+        **Deployed URL:** https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
 
         A RESTful API for the TCSS 460 group project.
     version: 0.1.0
