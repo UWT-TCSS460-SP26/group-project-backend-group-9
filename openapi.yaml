@@ -95,10 +95,34 @@ paths:
                                 $ref: '#/components/schemas/MoviesSearchResponse'
                 '400':
                     description: Bad query string
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Page number must be less than total pages
                 '500':
-                    description: Internal server error
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
                 '502':
-                    description: Failed to reach external API
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to reach external API
 
                                 
 # ── Schemas ───────────────────────────────────────────────────
