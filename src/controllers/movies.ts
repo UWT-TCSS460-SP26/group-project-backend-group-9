@@ -5,10 +5,10 @@ const apiKey = process.env.MOVIE_READ_KEY;
 
 export const getMovies = async (request: Request, response: Response) => {
     const { text, after, before } = request.query;
-    const page = request.query.page || 0;
-    const lang = request.query.lang || 'en';
-    const sort = request.query.sort || 'popularity';
-    const order = request.query.order || 'desc';
+    const page: number = Number(request.query.page) || 0;
+    const lang: string = request.query.lang || 'en';
+    const sort: string = request.query.sort || 'popularity';
+    const order: string = request.query.order || 'desc';
 
     const sortKey: object = {
         title: 'original_title',
