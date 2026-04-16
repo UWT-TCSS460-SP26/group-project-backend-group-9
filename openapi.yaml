@@ -39,28 +39,53 @@ paths:
         get:
             tags: [General]
             summary: Search for movies with query strings
-            description: Returns movies matching search query.
+            description: Returns movies matching search query. With no parameters, returns movies sorted by popularity in descending order.
             parameters:
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+                  description: Page number from the results
                 - name: keyword
                   in: query
                   required: false
                   schema:
                       type: string
-                  description: Search for keywords in the title or description. Comma-seperated single words
+                      example: Knight,crime
+                  description: Search for (case-insensitive) keywords in the title or description. Comma-seperated single words
+                - name: after
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2022-05-17
+                  description: Earliest release date allowed among search results (exclusive)
+                - name: before
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2026-03-22
+                  description: Latest release date allowed among search results (exclusive)
                 - name: sort
                   in: query
                   required: false
                   schema:
                       type: string
+                      default: popularity
                       enum: [title, popularity, date, rating]
-                  description: Field to sort on, defaults to 'title'
+                  description: Field to sort on
                 - name: order
                   in: query
                   required: false
                   schema:
                       type: string
+                      default: desc
                       enum: [asc, desc]
-                  description: Sorting order, defaults to 'asc'
+                  description: Sorting order
             responses:
                 '200':
                     description: One page of returned movies, for a maximum of 20 movies per page.
@@ -88,7 +113,7 @@ components:
                     example: 200
                 page:
                     type: integer
-                    example: 1
+                    example: 0
                 total_pages:
                     type: integer
                     example: 1
