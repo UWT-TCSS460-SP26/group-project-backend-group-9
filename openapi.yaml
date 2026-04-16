@@ -56,6 +56,14 @@ paths:
                       type: string
                       example: Knight,crime
                   description: Search for (case-insensitive) keywords in the title or description. Comma-seperated single words
+                - name: lang
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: en
+                      default: en
+                  description: ISO-639 language code
                 - name: after
                   in: query
                   required: false
@@ -122,9 +130,8 @@ paths:
                                 properties:
                                     error:
                                         type: string
-                                        example: Failed to reach external API
+                                        example: Network error
 
-                                
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
@@ -138,10 +145,10 @@ components:
                 page:
                     type: integer
                     example: 0
-                total_pages:
+                totalPages:
                     type: integer
                     example: 1
-                total_results:
+                totalResults:
                     type: integer
                     example: 1
                 results:
@@ -161,7 +168,7 @@ components:
                             description:
                                 type: string
                                 example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
-                            release_date:
+                            releaseDate:
                                 type: string
                                 example: 2023-06-23
                             poster:

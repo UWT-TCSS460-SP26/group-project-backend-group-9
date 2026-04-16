@@ -59,8 +59,8 @@ export const requirePathParam = (name: string) => {
 export const validateEnum = (name: string, options: string[]) => {
     return (request: Request, response: Response, next: NextFunction) => {
         const value: string = request.params[name] || request.query[name];
-        if (value && !(value in options)) {
-            response.status(400).json({ error: `${value} is an invalid value` });
+        if (value && !options.includes(value)) {
+            response.status(400).json({ error: `${value} is not one of ${options}` });
             return;
         }
         next();
@@ -73,7 +73,7 @@ export const validateEnum = (name: string, options: string[]) => {
 export const validateNumberRange = (name: string, min?: number, max?: number) => {
     return (request: Request, response: Response, next: NextFunction) => {
         const value: number = Number(request.params[name] || request.query[name]);
-        if (value && (value < min || value > max)) {
+        if (value && ((min && value < min) || (max && value > max))) {
             response.status(400).json({ error: `${value} is not within the allowed range` });
             return;
         }
@@ -87,16 +87,20 @@ export const validateNumberRange = (name: string, min?: number, max?: number) =>
 export const validateDate = (name: string) => {
     return (request: Request, response: Response, next: NextFunction) => {
         const value: string = request.params[name] || request.query[name];
-        const seg: string[] = value.split('-');
+        const seg: string[] = value ? value.split('-') : undefined;
         if (
             value &&
-            seg[0].length === 4 &&
-            seg[1].length === 2 &&
-            Number(seg[1]) > 0 &&
-            Number(seg[1]) < 13 &&
-            seg[2].length === 2 &&
-            Number(seg[2]) > 0 &&
-            Number(seg[2]) < 32
+            !(
+                seg[0].length === 4 &&
+                seg[1].length === 2 &&
+                Number.isInteger(Number(seg[1])) &&
+                Number(seg[1]) > 0 &&
+                Number(seg[1]) < 13 &&
+                seg[2].length === 2 &&
+                Number.isInteger(Number(seg[2])) &&
+                Number(seg[2]) > 0 &&
+                Number(seg[2]) < 32
+            )
         ) {
             response.status(400).json({ error: `${value} is not a YYYY-MM-DD formatted date` });
             return;
@@ -109,12 +113,20 @@ export const validateDate = (name: string) => {
  * Wraps up validation for movie search with possible 'page', 'text', 'after', 'before', 'sort',
  * and 'order' parameters
  */
-export const validateMovieSearch = (request: Request, response: Response, next: NextFunction) => {
+export const validateMovieSearch = () => {
     return [
-        validateNumberRange(page, (min = 0)),
-        validateDate(after),
-        validateDate(before),
-        validateEnum(sort, ['title', 'popularity', 'date', 'rating']),
-        validateEnum(order, ['asc', 'desc']),
+        (request: Request, response: Response, next: NextFunction) => {
+            const page: string = request.query.page;
+            if (page && !Number.isInteger(Number(page))) {
+                response.status(400).json({ error: 'Page parameter must be an integer' });
+                return;
+            }
+            next();
+        },
+        validateNumberRange('page', 0),
+        validateDate('after'),
+        validateDate('before'),
+        validateEnum('sort', ['title', 'popularity', 'date', 'rating']),
+        validateEnum('order', ['asc', 'desc']),
     ];
 };
