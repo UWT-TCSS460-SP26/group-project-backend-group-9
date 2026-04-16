@@ -49,7 +49,7 @@ paths:
                       default: 0
                       minimum: 0
                   description: Page number from the results
-                - name: keyword
+                - name: text
                   in: query
                   required: false
                   schema:
