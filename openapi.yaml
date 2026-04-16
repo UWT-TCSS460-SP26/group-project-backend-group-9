@@ -11,6 +11,8 @@ info:
 servers:
     - url: http://localhost:3000
       description: Local development
+    - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
+      description: Production environment
 
 tags:
     - name: General
@@ -33,3 +35,114 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
+    /movies:
+        get:
+            tags: [General]
+            summary: Search for movies with query strings
+            description: Returns movies matching search query.
+            parameters:
+                - name: keyword
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: Search for keywords in the title or description. Comma-seperated single words
+                - name: sort
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [title, popularity, date, rating]
+                  description: Field to sort on, defaults to 'title'
+                - name: order
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [asc, desc]
+                  description: Sorting order, defaults to 'asc'
+            responses:
+                '200':
+                    description: One page of returned movies, for a maximum of 20 movies per page.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MoviesSearchResponse'
+                '400':
+                    description: Bad query string
+                '500':
+                    description: Internal server error
+                '502':
+                    description: Failed to reach external API
+
+                                
+# ── Schemas ───────────────────────────────────────────────────
+
+components:
+    schemas:
+        MoviesSearchResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                page:
+                    type: integer
+                    example: 1
+                total_pages:
+                    type: integer
+                    example: 1
+                total_results:
+                    type: integer
+                    example: 1
+                results:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            id:
+                                type: integer
+                                example: 961323
+                            lang:
+                                type: string
+                                example: en
+                            title:
+                                type: string
+                                example: Nimona
+                            description:
+                                type: string
+                                example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
+                            release_date:
+                                type: string
+                                example: 2023-06-23
+                            poster:
+                                type: string
+                                example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+
+        MovieResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                id:
+                    type: integer
+                    example: 961323
+                lang:
+                    type: string
+                    example: en
+                title:
+                    type: string
+                    example: Nimona
+                description:
+                    type: string
+                    example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
+                release_date:
+                    type: string
+                    example: 2023-06-23
+                poster:
+                    type: string
+                    example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+                duration:
+                    type: integer
+                    example: 99
