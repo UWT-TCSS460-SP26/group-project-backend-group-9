@@ -62,14 +62,14 @@ paths:
                   schema:
                       type: string
                       example: 2022-05-17
-                  description: Earliest release date allowed among search results (exclusive)
+                  description: Earliest release date allowed among search results (inclusive)
                 - name: before
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2026-03-22
-                  description: Latest release date allowed among search results (exclusive)
+                  description: Latest release date allowed among search results (inclusive)
                 - name: sort
                   in: query
                   required: false
