@@ -11,6 +11,8 @@ info:
 servers:
     - url: http://localhost:3000
       description: Local development
+    - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
+      description: Production environment
 
 tags:
     - name: General
@@ -33,3 +35,170 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
+    /movies/search:
+        get:
+            tags: [General]
+            summary: Search for movies with query strings
+            description: Returns movies matching search query. With no parameters, returns movies sorted by popularity in descending order.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+                  description: Page number from the results
+                - name: lang
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: en
+                      default: en
+                  description: ISO-639 language code
+                - name: title
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: Nimona
+                  description: Search for (case-insensitive) words within the title. Comma seperated list
+                - name: after
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2022-05-17
+                  description: Earliest release date allowed among search results (inclusive)
+                - name: before
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2026-03-22
+                  description: Latest release date allowed among search results (inclusive)
+                - name: sort
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      default: popularity
+                      enum: [title, popularity, date, rating]
+                  description: Field to sort on
+                - name: order
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      default: desc
+                      enum: [asc, desc]
+                  description: Sorting order
+            responses:
+                '200':
+                    description: One page of returned movies, with 0 - 20 movies per page.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MoviesSearchResponse'
+                '400':
+                    description: Bad query string
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Page number must be less than total pages
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
+                '502':
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Network error
+
+# ── Schemas ───────────────────────────────────────────────────
+
+components:
+    schemas:
+        MoviesSearchResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                page:
+                    type: integer
+                    example: 0
+                totalPages:
+                    type: integer
+                    example: 2
+                    minimum: 0
+                results:
+                    type: array
+                    items:
+                        type: object
+                        minItems: 0
+                        maxItems: 3
+                        properties:
+                            id:
+                                type: integer
+                                example: 961323
+                            lang:
+                                type: string
+                                example: en
+                            title:
+                                type: string
+                                example: Nimona
+                            description:
+                                type: string
+                                example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
+                            releaseDate:
+                                type: string
+                                example: 2023-06-23
+                            poster:
+                                type: string
+                                example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+
+        MovieResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                id:
+                    type: integer
+                    example: 961323
+                lang:
+                    type: string
+                    example: en
+                title:
+                    type: string
+                    example: Nimona
+                description:
+                    type: string
+                    example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
+                release_date:
+                    type: string
+                    example: 2023-06-23
+                poster:
+                    type: string
+                    example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+                duration:
+                    type: integer
+                    example: 99

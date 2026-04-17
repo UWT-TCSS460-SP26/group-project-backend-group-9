@@ -17,7 +17,7 @@
         "lint": "eslint .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "lint:fix": "eslint --fix."
+        "lint:fix": "eslint --fix ."
     },
     "dependencies": {
         "@scalar/express-api-reference": "^0.9.0",
