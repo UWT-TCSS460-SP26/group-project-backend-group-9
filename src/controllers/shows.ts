@@ -9,7 +9,7 @@ export const getShowsById = async (request: Request, response: Response) => {
     const { id } = request.params;
 
     if (isNaN(Number(id))) {
-        response.status(400).json({ error: 'Invalid show ID'});
+        response.status(400).json({ error: 'Invalid show ID' });
         return;
     }
 
