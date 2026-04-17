@@ -58,7 +58,7 @@ export const requirePathParam = (name: string) => {
  */
 export const validateEnum = (name: string, options: string[]) => {
     return (request: Request, response: Response, next: NextFunction) => {
-        const value: string = request.params[name] || request.query[name];
+        const value: string = (request.params[name] || request.query[name]) as string;
         if (value && !options.includes(value)) {
             response.status(400).json({ error: `${value} is not one of ${options}` });
             return;
@@ -86,8 +86,9 @@ export const validateNumberRange = (name: string, min?: number, max?: number) =>
  */
 export const validateDate = (name: string) => {
     return (request: Request, response: Response, next: NextFunction) => {
-        const value: string = request.params[name] || request.query[name];
-        const seg: string[] = value ? value.split('-') : undefined;
+        const value: string = (request.params[name] || request.query[name]) as string;
+        const seg: string[] | undefined = value?.split('-');
+
         if (
             value &&
             !(
@@ -115,8 +116,9 @@ export const validateDate = (name: string) => {
  */
 export const validateMovieSearch = () => {
     return [
+        requireEnvVar('MOVIE_READ_KEY'),
         (request: Request, response: Response, next: NextFunction) => {
-            const page: string = request.query.page;
+            const page: string = request.query.page as string;
             if (page && !Number.isInteger(Number(page))) {
                 response.status(400).json({ error: 'Page parameter must be an integer' });
                 return;

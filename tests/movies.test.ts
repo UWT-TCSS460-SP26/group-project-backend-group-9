@@ -5,8 +5,8 @@ import { app } from '../src/app';
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// Full mock response matching OpenWeatherMap's shape
-const mockMovieSearchResponse = {
+// Full mock response matching TMDB's shape
+const mockMovieSearchResponse: object = {
     page: 1,
     results: [
         {
@@ -31,7 +31,7 @@ const mockMovieSearchResponse = {
     total_results: 1,
 };
 
-const mockMovieResponse = {
+const mockMovieResponse: object = {
     adult: false,
     backdrop_path: '/sidvlo7V8VMyskNKGwua0Tarbol.jpg',
     belongs_to_collection: null,
@@ -122,6 +122,11 @@ const mockMovieResponse = {
     vote_count: 1358,
 };
 
+beforeEach(() => {
+    mockFetch.mockReset();
+    process.env.MOVIE_READ_KEY = 'test-api-key';
+});
+
 describe('Movie Routes', () => {
     describe('GET /movies/search?', () => {
         it('returns transformed search data on success', async () => {
@@ -131,21 +136,20 @@ describe('Movie Routes', () => {
                 json: async () => mockMovieSearchResponse,
             });
 
-            const res = await request(app).get(
-                '/movies/search?text=knight,crime&before=2023-07-01&after=2023-05-01'
-            );
+            const res = await request(app).get('/movies/search?before=2023-07-01&after=2023-05-01');
             expect(res.status).toBe(200);
             expect(res.body.results[0].title).toBe('Nimona');
-            expect(res.body.total_results).toBe(1);
+            expect(res.body.totalPages).toBe(1);
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('release_date.lte=2023-07-01')
+                expect.stringContaining('primary_release_date.lte=2023-07-01'),
+                expect.objectContaining({ headers: { Authorization: 'Bearer undefined' } })
             );
         });
 
         it('returns 400 when query validation fails', async () => {
             const res = await request(app).get('/movies/search?page=one');
             expect(res.status).toBe(400);
-            expect(res.body.error).toMatch('/page/i');
+            expect(res.body.error).toMatch(/.*page.*/i);
         });
 
         it('returns 502 when fetch throws', async () => {

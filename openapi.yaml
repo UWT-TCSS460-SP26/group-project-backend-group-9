@@ -35,7 +35,7 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
-    /movies:
+    /movies/search:
         get:
             tags: [General]
             summary: Search for movies with query strings
@@ -49,13 +49,6 @@ paths:
                       default: 0
                       minimum: 0
                   description: Page number from the results
-                - name: text
-                  in: query
-                  required: false
-                  schema:
-                      type: string
-                      example: Knight,crime
-                  description: Search for (case-insensitive) keywords in the title or description. Comma-seperated single words
                 - name: lang
                   in: query
                   required: false
@@ -64,6 +57,13 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
+                - name: title
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: Nimona
+                  description: Search for (case-insensitive) words within the title. Comma seperated list
                 - name: after
                   in: query
                   required: false
@@ -96,7 +96,7 @@ paths:
                   description: Sorting order
             responses:
                 '200':
-                    description: One page of returned movies, for a maximum of 20 movies per page.
+                    description: One page of returned movies, with 0 - 20 movies per page.
                     content:
                         application/json:
                             schema:
@@ -147,14 +147,14 @@ components:
                     example: 0
                 totalPages:
                     type: integer
-                    example: 1
-                totalResults:
-                    type: integer
-                    example: 1
+                    example: 2
+                    minimum: 0
                 results:
                     type: array
                     items:
                         type: object
+                        minItems: 0
+                        maxItems: 3
                         properties:
                             id:
                                 type: integer
