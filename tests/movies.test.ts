@@ -128,6 +128,43 @@ beforeEach(() => {
 });
 
 describe('Movie Routes', () => {
+    describe('GET /movies/:id', () => {
+        it('returns transformed movie details on success', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => mockMovieResponse,
+            });
+
+            const res = await request(app).get('/movies/961323');
+            expect(res.status).toBe(200);
+            expect(res.body.id).toBe(961323);
+            expect(res.body.title).toBe('Nimona');
+            expect(res.body.description).toBe(
+                'A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.'
+            );
+            expect(res.body.releaseDate).toBe('2023-06-23');
+            expect(res.body.poster).toBe(
+                'https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg'
+            );
+            expect(res.body.genres).toContain('Animation');
+            expect(res.body.genres).toContain('Family');
+            expect(res.body.runtime).toBe(99);
+            expect(res.body.rating).toBe(7.9);
+        });
+
+        it('returns 404 for an invalid movie id', async () => {
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 404,
+                json: async () => ({ status_message: 'The resource you requested could not be found.' }),
+            });
+
+            const res = await request(app).get('/movies/999999999');
+            expect(res.status).toBe(404);
+        });
+    });
+
     describe('GET /movies/search?', () => {
         it('returns transformed search data on success', async () => {
             mockFetch.mockResolvedValue({
