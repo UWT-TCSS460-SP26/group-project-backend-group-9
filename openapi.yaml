@@ -17,6 +17,8 @@ servers:
 tags:
     - name: General
       description: General-purpose routes
+    - name: Movies
+      description: Movie endpoints
     - name: Shows
       description: TV show endpoints
 
@@ -39,7 +41,7 @@ paths:
                                         example: 'Alive'
     /movies/{id}:
         get:
-            tags: [General]
+            tags: [Movies]
             summary: Get movie details
             description: Returns detailed information for a single movie by its TMDB ID.
             parameters:
@@ -89,7 +91,7 @@ paths:
                                         example: Failed to fetch movie details
     /movies/search:
         get:
-            tags: [General]
+            tags: [Movies]
             summary: Search for movies with query strings
             description: Returns movies matching search query. With no parameters, returns movies sorted by popularity in descending order.
             parameters:
@@ -244,6 +246,103 @@ paths:
                                         type: string
                                         example: Network error
 
+    /shows/search:
+        get:
+            tags: [Shows]
+            summary: Search for shows with query strings
+            description: Returns shows matching search query. With no parameters, returns shows sorted by popularity in descending order.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+                  description: Page number from the results
+                - name: lang
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: en
+                      default: en
+                  description: ISO-639 language code
+                - name: text
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: Breaking,Bad
+                  description: Search for (case-insensitive) words within the title and description. Comma seperated list
+                - name: after
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2007-01-13
+                  description: Earliest first air date allowed among search results (inclusive)
+                - name: before
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      example: 2010-03-14
+                  description: Latest first air date allowed among search results (inclusive)
+                - name: sort
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      default: popularity
+                      enum: [name, popularity, date, rating]
+                  description: Field to sort on
+                - name: order
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      default: desc
+                      enum: [asc, desc]
+                  description: Sorting order
+            responses:
+                '200':
+                    description: One page of returned shows, with 0 - 20 shows per page.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowsSearchResponse'
+                '400':
+                    description: Bad query string
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Page number must be less than total pages
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
+                '502':
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Network error
+                                        
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
@@ -287,6 +386,75 @@ components:
                                 type: string
                                 example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
 
+        MovieResponse:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 961323
+                title:
+                    type: string
+                    example: Nimona
+                description:
+                    type: string
+                    example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
+                releaseDate:
+                    type: string
+                    example: 2023-06-23
+                poster:
+                    type: string
+                    example: https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg
+                genres:
+                    type: array
+                    items:
+                        type: string
+                    example: [Animation, Family, Adventure]
+                runtime:
+                    type: integer
+                    example: 99
+                rating:
+                    type: number
+                    example: 7.9
+
+        ShowsSearchResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                page:
+                    type: integer
+                    example: 0
+                totalPages:
+                    type: integer
+                    example: 2
+                    minimum: 0
+                results:
+                    type: array
+                    items:
+                        type: object
+                        minItems: 0
+                        maxItems: 20
+                        properties:
+                            id:
+                                type: integer
+                                example: 1396
+                            lang:
+                                type: string
+                                example: en
+                            name:
+                                type: string
+                                example: Breaking Bad
+                            description: 
+                                type: string
+                                example: A chemistry teacher diagnosed with cancer turns to manufacturing drugs.
+                            firstAirDate:
+                                type: string
+                                example: 2008-01-20
+                            poster:
+                                type: string
+                                example: https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg
+                    
         ShowResponse:
             type: object
             properties:
@@ -308,10 +476,10 @@ components:
                     example: https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg
                 firstAirDate:
                     type: string
-                    example: '2008-01-20'
+                    example: 2008-01-20
                 lastAirDate:
                     type: string
-                    example: '2013-09-29'
+                    example: 2013-09-29
                 numberOfSeasons:
                     type: integer
                     example: 5
@@ -331,33 +499,3 @@ components:
                     items:
                         type: string
                     example: [Drama, Crime]
-
-        MovieResponse:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    example: 961323
-                title:
-                    type: string
-                    example: Nimona
-                description:
-                    type: string
-                    example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
-                releaseDate:
-                    type: string
-                    example: '2023-06-23'
-                poster:
-                    type: string
-                    example: 'https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg'
-                genres:
-                    type: array
-                    items:
-                        type: string
-                    example: ['Animation', 'Family', 'Adventure']
-                runtime:
-                    type: integer
-                    example: 99
-                rating:
-                    type: number
-                    example: 7.9

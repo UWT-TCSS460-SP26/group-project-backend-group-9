@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { showDetailsRoutes } from './details';
+import { searchRoutes } from './search';
+import { detailsRoutes } from './details';
 
 const showsRoutes = Router();
 
-showsRoutes.use('/', showDetailsRoutes);
+showsRoutes.use('/', detailsRoutes);
+showsRoutes.use('/search', searchRoutes);
 
 export { showsRoutes };
