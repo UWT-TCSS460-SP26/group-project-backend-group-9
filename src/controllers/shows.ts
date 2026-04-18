@@ -8,11 +8,6 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 export const getShowsById = async (request: Request, response: Response) => {
     const { id } = request.params;
 
-    if (isNaN(Number(id))) {
-        response.status(400).json({ error: 'Invalid show ID' });
-        return;
-    }
-
     try {
         const tmdbResponse = await fetch(`${TMDB_BASE_URL}/tv/${id}`, {
             headers: {
