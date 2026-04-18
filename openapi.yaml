@@ -35,6 +35,56 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
+    /movies/{id}:
+        get:
+            tags: [General]
+            summary: Get movie details
+            description: Returns detailed information for a single movie by its TMDB ID.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      example: 961323
+                  description: TMDB movie ID
+            responses:
+                '200':
+                    description: Movie details.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MovieResponse'
+                '404':
+                    description: Movie not found
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Movie not found
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
+                '502':
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch movie details
     /movies/search:
         get:
             tags: [General]
@@ -178,27 +228,29 @@ components:
         MovieResponse:
             type: object
             properties:
-                code:
-                    type: integer
-                    example: 200
                 id:
                     type: integer
                     example: 961323
-                lang:
-                    type: string
-                    example: en
                 title:
                     type: string
                     example: Nimona
                 description:
                     type: string
                     example: A knight framed for a tragic crime teams with a scrappy, shape-shifting teen to prove his innocence.
-                release_date:
+                releaseDate:
                     type: string
-                    example: 2023-06-23
+                    example: '2023-06-23'
                 poster:
                     type: string
-                    example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
-                duration:
+                    example: 'https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg'
+                genres:
+                    type: array
+                    items:
+                        type: string
+                    example: ['Animation', 'Family', 'Adventure']
+                runtime:
                     type: integer
                     example: 99
+                rating:
+                    type: number
+                    example: 7.9

@@ -125,3 +125,41 @@ export const getMovies = async (request: Request, response: Response) => {
         response.status(502).json({ error: 'Network error' });
     }
 };
+
+export const getMovieDetails = async (request: Request, response: Response) => {
+    const { id } = request.params;
+
+    try {
+        const result = await fetch(`${BASE_URL}/movie/${encodeURIComponent(String(id))}`, {
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+            },
+        });
+
+        if (result.status === 404) {
+            response.status(404).json({ error: 'Movie not found' });
+            return;
+        }
+
+        if (!result.ok) {
+            response.status(502).json({ error: 'Failed to fetch movie details' });
+            return;
+        }
+
+        const data = (await result.json()) as Record<string, unknown>;
+        const genres = (data.genres as Array<{ id: number; name: string }>).map((g) => g.name);
+
+        response.json({
+            id: data.id,
+            title: data.title,
+            description: data.overview,
+            releaseDate: data.release_date,
+            poster: `https://image.tmdb.org/t/p/w500${data.poster_path}`,
+            genres,
+            runtime: data.runtime,
+            rating: data.vote_average,
+        });
+    } catch (_error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+};
