@@ -9,10 +9,10 @@ info:
     version: 0.1.0
 
 servers:
+    - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
+      description: Production API
     - url: http://localhost:3000
       description: Local development
-    - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
-      description: Production environment
 
 tags:
     - name: General
@@ -109,13 +109,13 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
-                - name: title
+                - name: text
                   in: query
                   required: false
                   schema:
                       type: string
                       example: Nimona
-                  description: Search for (case-insensitive) words within the title. Comma seperated list
+                  description: Search for (case-insensitive) words within the title and description. Comma seperated list
                 - name: after
                   in: query
                   required: false
@@ -266,7 +266,7 @@ components:
                     items:
                         type: object
                         minItems: 0
-                        maxItems: 3
+                        maxItems: 20
                         properties:
                             id:
                                 type: integer
@@ -285,7 +285,7 @@ components:
                                 example: 2023-06-23
                             poster:
                                 type: string
-                                example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+                                example: https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg
 
         ShowResponse:
             type: object
