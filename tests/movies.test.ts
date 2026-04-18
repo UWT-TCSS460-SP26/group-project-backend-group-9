@@ -157,7 +157,9 @@ describe('Movie Routes', () => {
             mockFetch.mockResolvedValue({
                 ok: false,
                 status: 404,
-                json: async () => ({ status_message: 'The resource you requested could not be found.' }),
+                json: async () => ({
+                    status_message: 'The resource you requested could not be found.',
+                }),
             });
 
             const res = await request(app).get('/movies/999999999');
