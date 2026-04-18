@@ -75,6 +75,16 @@ paths:
                                     error:
                                         type: string
                                         example: Internal server error
+                '502':
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch movie details
     /movies/search:
         get:
             tags: [General]

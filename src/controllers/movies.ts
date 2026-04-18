@@ -142,7 +142,7 @@ export const getMovieDetails = async (request: Request, response: Response) => {
         }
 
         if (!result.ok) {
-            response.status(500).json({ error: 'Failed to fetch movie details' });
+            response.status(502).json({ error: 'Failed to fetch movie details' });
             return;
         }
 
