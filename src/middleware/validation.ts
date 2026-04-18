@@ -68,6 +68,20 @@ export const validateEnum = (name: string, options: string[]) => {
 };
 
 /**
+ * Validates that a number parameter is a number
+ */
+export const validateInteger = (name: string) => {
+    return (request: Request, response: Response, next: NextFunction) => {
+        const value: number = Number(request.params[name] || request.query[name]);
+        if (!Number.isInteger(value)) {
+            response.status(400).json({ error: `${value} is not an integer` });
+            return;
+        }
+        next();
+    };
+};
+
+/**
  * Validates that a number parameter is within the specified range
  */
 export const validateNumberRange = (name: string, min?: number, max?: number) => {

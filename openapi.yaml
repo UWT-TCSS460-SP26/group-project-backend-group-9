@@ -17,6 +17,8 @@ servers:
 tags:
     - name: General
       description: General-purpose routes
+    - name: Shows
+      description: TV show endpoints
 
 paths:
     /status:
@@ -182,6 +184,66 @@ paths:
                                         type: string
                                         example: Network error
 
+    /shows/{id}:
+        get:
+            tags: [Shows]
+            summary: Get TV show details
+            description: Returns detailed metadata for a specific TV show.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                  description: TMDB series ID
+            responses:
+                '200':
+                    description: TV show details
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowResponse'
+                '400':
+                    description: Invalid show ID
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Invalid show ID
+                '404':
+                    description: Show not found
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Show not found
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch show data
+                '502':
+                    description: Bad gateway
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Network error
+
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
@@ -224,6 +286,51 @@ components:
                             poster:
                                 type: string
                                 example: TBD # TODO: Do we host these local? Do we pass a blob of image data from TMDB? Do we pass along an absolute url to TMDB?
+
+        ShowResponse:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    example: 200
+                id:
+                    type: integer
+                    example: 1396
+                name:
+                    type: string
+                    example: Breaking Bad
+                description:
+                    type: string
+                    example: A chemistry teacher diagnosed with cancer turns to manufacturing drugs.
+                posterUrl:
+                    type: string
+                    nullable: true
+                    example: https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg
+                firstAirDate:
+                    type: string
+                    example: '2008-01-20'
+                lastAirDate:
+                    type: string
+                    example: '2013-09-29'
+                numberOfSeasons:
+                    type: integer
+                    example: 5
+                numberOfEpisodes:
+                    type: integer
+                    example: 62
+                status:
+                    type: string
+                    example: Ended
+                networks:
+                    type: array
+                    items:
+                        type: string
+                    example: [AMC]
+                genres:
+                    type: array
+                    items:
+                        type: string
+                    example: [Drama, Crime]
 
         MovieResponse:
             type: object
