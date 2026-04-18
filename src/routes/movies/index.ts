@@ -4,7 +4,7 @@ import { searchRoutes } from './search';
 
 const movieRoutes = Router();
 
-movieRoutes.use('/', detailsRoutes);
 movieRoutes.use('/search', searchRoutes);
+movieRoutes.use('/', detailsRoutes);
 
 export { movieRoutes };

@@ -13,7 +13,7 @@ export const getMovies = async (request: Request, response: Response) => {
     const order: string = (request.query.order || 'desc') as string;
 
     const sortKey: Record<string, string> = {
-        title: 'original_title',
+        title: 'title',
         popularity: 'popularity',
         date: 'primary_release_date',
         rating: 'vote_average',

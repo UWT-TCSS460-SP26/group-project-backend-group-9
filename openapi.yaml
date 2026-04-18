@@ -185,7 +185,6 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
-
     /shows/{id}:
         get:
             tags: [Shows]
@@ -245,7 +244,6 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
-
     /shows/search:
         get:
             tags: [Shows]
@@ -342,7 +340,7 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
-                                        
+
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
@@ -427,7 +425,7 @@ components:
                     example: 0
                 totalPages:
                     type: integer
-                    example: 2
+                    example: 1
                     minimum: 0
                 results:
                     type: array
@@ -445,7 +443,7 @@ components:
                             name:
                                 type: string
                                 example: Breaking Bad
-                            description: 
+                            description:
                                 type: string
                                 example: A chemistry teacher diagnosed with cancer turns to manufacturing drugs.
                             firstAirDate:
@@ -454,7 +452,7 @@ components:
                             poster:
                                 type: string
                                 example: https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg
-                    
+
         ShowResponse:
             type: object
             properties:

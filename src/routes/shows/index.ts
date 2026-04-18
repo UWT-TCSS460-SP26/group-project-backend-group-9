@@ -4,7 +4,7 @@ import { detailsRoutes } from './details';
 
 const showsRoutes = Router();
 
-showsRoutes.use('/', detailsRoutes);
 showsRoutes.use('/search', searchRoutes);
+showsRoutes.use('/', detailsRoutes);
 
 export { showsRoutes };

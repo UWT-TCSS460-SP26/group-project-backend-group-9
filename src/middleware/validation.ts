@@ -68,12 +68,12 @@ export const validateEnum = (name: string, options: string[]) => {
 };
 
 /**
- * Validates that a number parameter is a number
+ * Validates that a number parameter is a number. Allows unset parameters.
  */
 export const validateInteger = (name: string) => {
     return (request: Request, response: Response, next: NextFunction) => {
         const value: number = Number(request.params[name] || request.query[name]);
-        if (!Number.isInteger(value)) {
+        if ((request.params[name] || request.query[name]) && !Number.isInteger(value)) {
             response.status(400).json({ error: `${value} is not an integer` });
             return;
         }
@@ -131,18 +131,27 @@ export const validateDate = (name: string) => {
 export const validateMovieSearch = () => {
     return [
         requireEnvVar('MOVIE_READ_KEY'),
-        (request: Request, response: Response, next: NextFunction) => {
-            const page: string = request.query.page as string;
-            if (page && !Number.isInteger(Number(page))) {
-                response.status(400).json({ error: 'Page parameter must be an integer' });
-                return;
-            }
-            next();
-        },
+        validateInteger('page'),
         validateNumberRange('page', 0),
         validateDate('after'),
         validateDate('before'),
         validateEnum('sort', ['title', 'popularity', 'date', 'rating']),
+        validateEnum('order', ['asc', 'desc']),
+    ];
+};
+
+/**
+ * Wraps up validation for show search search with possible 'page', 'text', 'after', 'before', 'sort',
+ * and 'order' parameters
+ */
+export const validateShowSearch = () => {
+    return [
+        requireEnvVar('MOVIE_READ_KEY'),
+        validateInteger('page'),
+        validateNumberRange('page', 0),
+        validateDate('after'),
+        validateDate('before'),
+        validateEnum('sort', ['name', 'popularity', 'date', 'rating']),
         validateEnum('order', ['asc', 'desc']),
     ];
 };

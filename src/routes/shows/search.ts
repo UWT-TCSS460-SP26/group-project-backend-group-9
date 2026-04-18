@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { getMovies } from '../../controllers/movies';
+import { getShows } from '../../controllers/shows';
 import { validateShowSearch } from '../../middleware/validation';
 
 const searchRoutes = Router();
 
-searchRoutes.get('/', validateShowSearch(), getMovies);
+searchRoutes.get('/', validateShowSearch(), getShows);
 
 export { searchRoutes };
