@@ -51,8 +51,12 @@ export const getMovies = async (request: Request, response: Response) => {
                     keywords.length > 0
                         ? keywords.every(
                               (word) =>
-                                  (movie.title as string).toUpperCase().indexOf(word.toUpperCase()) > -1 ||
-                                  (movie.overview as string).toUpperCase().indexOf(word.toUpperCase()) > -1
+                                  (movie.title as string)
+                                      .toUpperCase()
+                                      .indexOf(word.toUpperCase()) > -1 ||
+                                  (movie.overview as string)
+                                      .toUpperCase()
+                                      .indexOf(word.toUpperCase()) > -1
                           )
                         : true
                 )
