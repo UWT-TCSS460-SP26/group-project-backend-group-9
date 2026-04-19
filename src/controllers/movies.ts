@@ -1,11 +1,7 @@
 import { Request, Response } from 'express';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-<<<<<<< HEAD
-=======
 const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
-const apiKey = process.env.MOVIE_READ_KEY;
->>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
 
 export const getMovies = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
@@ -24,33 +20,13 @@ export const getMovies = async (request: Request, response: Response) => {
     };
 
     try {
-<<<<<<< HEAD
-        if (title) {
-            // Going to use the TMDB search API, then manually apply filters to it
-            const result = await fetch(
-                `${BASE_URL}/search/movie?query=${encodeURIComponent(title)}&page=${encodeURIComponent(Number(page) + 1)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
-                {
-                    // TMDB Requires the key in a custom header
-                    headers: {
-                        Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
-                    },
-                }
-            );
-
-            const data = (await result.json()) as Record<string, unknown>;
-
-            if (!result.ok) {
-                response.status(result.status).json({ error: data.message || 'API error' });
-                return;
-=======
         const result = await fetch(
             `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
             {
                 // TMDB Requires the key in a custom header
                 headers: {
-                    Authorization: `Bearer ${apiKey}`,
+                    Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
                 },
->>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
             }
         );
 
@@ -83,56 +59,7 @@ export const getMovies = async (request: Request, response: Response) => {
                           )
                         : true
                 )
-<<<<<<< HEAD
-                    .filter((a) =>
-                        after ? Date.parse(a.release_date as string) - Date.parse(after) >= 0 : true
-                    )
-                    .filter((a) =>
-                        before
-                            ? Date.parse(a.release_date as string) - Date.parse(before) <= 0
-                            : true
-                    )
-                    .map((movie) => {
-                        return {
-                            id: movie.id,
-                            lang: lang,
-                            title: movie.title,
-                            description: movie.overview,
-                            releaseDate: movie.release_date,
-                            poster: 'TBD',
-                        };
-                    }),
-            };
-
-            response.json(out);
-        } else {
-            // Just use the TMDB discover API
-            const result = await fetch(
-                `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
-                {
-                    // TMDB Requires the key in a custom header
-                    headers: {
-                        Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
-                    },
-                }
-            );
-
-            const data = (await result.json()) as Record<string, unknown>;
-
-            if (!result.ok) {
-                response.status(result.status).json({ error: data.message || 'API error' });
-                return;
-            }
-
-            const movies: Record<string, unknown>[] = data.results as Record<string, unknown>[];
-            const out: object = {
-                code: 200,
-                page: page,
-                totalPages: data.total_pages,
-                results: movies.map((movie) => {
-=======
                 .map((movie) => {
->>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
                     return {
                         id: movie.id,
                         lang: lang,

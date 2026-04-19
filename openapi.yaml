@@ -117,11 +117,7 @@ paths:
                   schema:
                       type: string
                       example: Nimona
-<<<<<<< HEAD
-                  description: Search for (case-insensitive) words within the title. Comma separated list
-=======
-                  description: Search for (case-insensitive) words within the title and description. Comma seperated list
->>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
+                  description: Search for (case-insensitive) words within the title and description. Comma separated list
                 - name: after
                   in: query
                   required: false
