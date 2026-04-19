@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { getShowsById } from '../../controllers/shows';
+import { getShowDetails } from '../../controllers/shows';
 import { requirePathParam, validateInteger } from '../../middleware/validation';
 
-const showDetailsRoutes = Router();
+const detailsRoutes = Router();
 
-showDetailsRoutes.get('/:id', requirePathParam('id'), validateInteger('id'), getShowsById);
+detailsRoutes.get('/:id', requirePathParam('id'), validateInteger('id'), getShowDetails);
 
-export { showDetailsRoutes };
+export { detailsRoutes };
