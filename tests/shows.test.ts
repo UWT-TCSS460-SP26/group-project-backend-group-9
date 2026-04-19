@@ -109,7 +109,7 @@ describe('Show routes', () => {
             expect(res.body.totalPages).toBe(1);
             expect(mockFetch).toHaveBeenCalledWith(
                 expect.stringContaining('first_air_date.lte=2008-03-14'),
-                expect.objectContaining({ headers: { Authorization: 'Bearer undefined' } })
+                expect.objectContaining({ headers: { Authorization: 'Bearer test-api-key' } })
             );
         });
 

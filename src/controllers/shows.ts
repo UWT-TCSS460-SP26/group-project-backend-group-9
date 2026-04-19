@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 // TMDB base URLs for API requests and poster images
 const BASE_URL = 'https://api.themoviedb.org/3';
 const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
-const apiKey = process.env.MOVIE_READ_KEY;
 
 // Fetches TV show details from TMDB and returns a transformed response
 export const getShowDetails = async (request: Request, response: Response) => {
@@ -72,7 +71,7 @@ export const getShows = async (request: Request, response: Response) => {
             {
                 // TMDB Requires the key in a custom header
                 headers: {
-                    Authorization: `Bearer ${apiKey}`,
+                    Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
                 },
             }
         );
@@ -99,7 +98,7 @@ export const getShows = async (request: Request, response: Response) => {
                               (word) =>
                                   (show.name as string).toUpperCase().indexOf(word.toUpperCase()) >
                                       -1 ||
-                                  (show.overview as string)
+                                  ((show.overview as string) || '')
                                       .toUpperCase()
                                       .indexOf(word.toUpperCase()) > -1
                           )
@@ -112,7 +111,7 @@ export const getShows = async (request: Request, response: Response) => {
                         name: show.name,
                         description: show.overview,
                         firstAirDate: show.first_air_date,
-                        poster: `${BASE_IMAGE_URL}${show.poster_path}`,
+                        poster: show.poster_path ? `${BASE_IMAGE_URL}${show.poster_path}` : null,
                     };
                 }),
         };

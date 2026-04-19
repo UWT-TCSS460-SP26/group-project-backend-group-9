@@ -181,7 +181,7 @@ describe('Movie Routes', () => {
             expect(res.body.totalPages).toBe(1);
             expect(mockFetch).toHaveBeenCalledWith(
                 expect.stringContaining('primary_release_date.lte=2023-07-01'),
-                expect.objectContaining({ headers: { Authorization: 'Bearer undefined' } })
+                expect.objectContaining({ headers: { Authorization: 'Bearer test-api-key' } })
             );
         });
 

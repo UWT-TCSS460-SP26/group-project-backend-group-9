@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const apiKey = process.env.MOVIE_READ_KEY;
 
 export const getMovies = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
@@ -40,7 +39,7 @@ export const getMovies = async (request: Request, response: Response) => {
                 {
                     // TMDB Requires the key in a custom header
                     headers: {
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
                     },
                 }
             );
@@ -90,7 +89,7 @@ export const getMovies = async (request: Request, response: Response) => {
                 {
                     // TMDB Requires the key in a custom header
                     headers: {
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
                     },
                 }
             );
@@ -132,7 +131,7 @@ export const getMovieDetails = async (request: Request, response: Response) => {
     try {
         const result = await fetch(`${BASE_URL}/movie/${encodeURIComponent(String(id))}`, {
             headers: {
-                Authorization: `Bearer ${apiKey}`,
+                Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
             },
         });
 

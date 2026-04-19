@@ -117,7 +117,7 @@ paths:
                   schema:
                       type: string
                       example: Nimona
-                  description: Search for (case-insensitive) words within the title. Comma seperated list
+                  description: Search for (case-insensitive) words within the title. Comma separated list
                 - name: after
                   in: query
                   required: false
@@ -272,7 +272,7 @@ paths:
                   schema:
                       type: string
                       example: Breaking,Bad
-                  description: Search for (case-insensitive) words within the title and description. Comma seperated list
+                  description: Search for (case-insensitive) words within the title and description. Comma separated list
                 - name: after
                   in: query
                   required: false
