@@ -70,3 +70,48 @@ The group will meet synchronously at least 3 times a week:
 ### Agenda Item 7: Wrap-up
 
 Meeting concluded.
+
+## Meeting 2 — Monday, April 13 2026
+
+**Meeting Scribe:** Saeed Esparza
+
+---
+
+### Agenda Item 1: Project Management
+
+Raiden created a Kanban board for us to get a sense of direction for sprints.
+We came to a general consensus of how we want the codebase to be organized.
+
+### Agenda Item 2: Search Population/Handling
+
+Riley brought up how details may get muddied when detail items get jumbled.
+Raiden brought up that it would not get jumbled, it will simply populate the search.
+Raiden brought up that we should maybe give TV shows and movies different endpoints.
+
+### Agenda Item 2: Tasks
+
+Raiden created four tasks for us to self-assign.
+
+### Agenda Item 3: Wrap-up
+
+Saeed got the API keys necessary.
+
+Meeting concluded.
+
+## Meeting 4 — Friday, April 17 2026
+
+**Meeting Scribe:** Saeed Esparza
+
+---
+
+### Agenda Item 1: Task Progress
+
+The team went over their current progress on the self-assigned tasks.
+No one indicated issues with their progress.
+Everyone self-assigned tasks as needed for the final integrations to complete the sprint.
+
+### Agenda Item 2: Wrap-up
+
+Talked about when we estimate we would be done with our tasks and had PRs reviewed soon after.
+
+Meeting concluded.
