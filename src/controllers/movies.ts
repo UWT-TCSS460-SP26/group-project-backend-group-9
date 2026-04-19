@@ -1,10 +1,15 @@
 import { Request, Response } from 'express';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
+<<<<<<< HEAD
+=======
+const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+const apiKey = process.env.MOVIE_READ_KEY;
+>>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
 
 export const getMovies = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
-    const title: string = request.query.title as string;
+    const text: string = request.query.text as string;
     const lang: string = (request.query.lang || 'en') as string;
     const after: string = request.query.after as string;
     const before: string = request.query.before as string;
@@ -18,20 +23,8 @@ export const getMovies = async (request: Request, response: Response) => {
         rating: 'vote_average',
     };
 
-    // Looks much better without prettier formatting
-    // prettier-ignore
-    const movieCompare: Record<string, (a: Record<string, unknown>, b: Record<string, unknown>) => number> = {
-        title: (a: Record<string, unknown>, b: Record<string, unknown>) =>
-            (a.title as string).localeCompare(b.title as string),
-        popularity: (a: Record<string, unknown>, b: Record<string, unknown>) =>
-            (a.popularity as number) - (b.popularity as number),
-        date: (a: Record<string, unknown>, b: Record<string, unknown>) =>
-            Date.parse(a.release_date as string) - Date.parse(b.release_date as string),
-        rating: (a: Record<string, unknown>, b: Record<string, unknown>) =>
-            ((a.vote_average as number) - (b.vote_average as number)) as number,
-    };
-
     try {
+<<<<<<< HEAD
         if (title) {
             // Going to use the TMDB search API, then manually apply filters to it
             const result = await fetch(
@@ -49,18 +42,48 @@ export const getMovies = async (request: Request, response: Response) => {
             if (!result.ok) {
                 response.status(result.status).json({ error: data.message || 'API error' });
                 return;
+=======
+        const result = await fetch(
+            `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
+            {
+                // TMDB Requires the key in a custom header
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                },
+>>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
             }
+        );
 
-            const movies: Record<string, unknown>[] = data.results as Record<string, unknown>[];
+        const data = (await result.json()) as Record<string, unknown>;
 
-            const out: object = {
-                code: 200,
-                page: page,
-                totalPages: data.total_pages,
-                results: (order === 'asc'
-                    ? movies.sort(movieCompare[sort])
-                    : movies.sort(movieCompare[sort]).reverse()
+        if (!result.ok) {
+            response.status(result.status).json({ error: data.message || 'API error' });
+            return;
+        }
+
+        const movies: Record<string, unknown>[] = data.results as Record<string, unknown>[];
+
+        const keywords: string[] = text?.split(',') || [];
+
+        const out: object = {
+            code: 200,
+            page: page,
+            totalPages: data.total_pages,
+            results: movies
+                .filter((movie) =>
+                    keywords.length > 0
+                        ? keywords.every(
+                              (word) =>
+                                  (movie.title as string)
+                                      .toUpperCase()
+                                      .indexOf(word.toUpperCase()) > -1 ||
+                                  (movie.overview as string)
+                                      .toUpperCase()
+                                      .indexOf(word.toUpperCase()) > -1
+                          )
+                        : true
                 )
+<<<<<<< HEAD
                     .filter((a) =>
                         after ? Date.parse(a.release_date as string) - Date.parse(after) >= 0 : true
                     )
@@ -107,21 +130,23 @@ export const getMovies = async (request: Request, response: Response) => {
                 page: page,
                 totalPages: data.total_pages,
                 results: movies.map((movie) => {
+=======
+                .map((movie) => {
+>>>>>>> 58165477a2f3221005799e168dbaf7de14faa436
                     return {
                         id: movie.id,
                         lang: lang,
                         title: movie.title,
                         description: movie.overview,
                         releaseDate: movie.release_date,
-                        poster: 'TBD',
+                        poster: `${BASE_IMAGE_URL}${movie.poster_path}`,
                     };
                 }),
-            };
+        };
 
-            response.json(out);
-        }
+        response.json(out);
     } catch (_error) {
-        response.status(502).json({ error: 'Network error' });
+        response.status(502).json({ error: 'Network error', details: _error });
     }
 };
 
@@ -153,7 +178,7 @@ export const getMovieDetails = async (request: Request, response: Response) => {
             title: data.title,
             description: data.overview,
             releaseDate: data.release_date,
-            poster: `https://image.tmdb.org/t/p/w500${data.poster_path}`,
+            poster: `${BASE_IMAGE_URL}${data.poster_path}`,
             genres,
             runtime: data.runtime,
             rating: data.vote_average,
