@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { searchRoutes } from './search';
 import { detailsRoutes } from './details';
+import { searchRoutes } from './search';
 
 const movieRoutes = Router();
 

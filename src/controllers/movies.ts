@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
-const apiKey = process.env.MOVIE_READ_KEY;
 
 export const getMovies = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
@@ -14,7 +13,7 @@ export const getMovies = async (request: Request, response: Response) => {
     const order: string = (request.query.order || 'desc') as string;
 
     const sortKey: Record<string, string> = {
-        title: 'original_title',
+        title: 'title',
         popularity: 'popularity',
         date: 'primary_release_date',
         rating: 'vote_average',
@@ -26,7 +25,7 @@ export const getMovies = async (request: Request, response: Response) => {
             {
                 // TMDB Requires the key in a custom header
                 headers: {
-                    Authorization: `Bearer ${apiKey}`,
+                    Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
                 },
             }
         );
@@ -84,7 +83,7 @@ export const getMovieDetails = async (request: Request, response: Response) => {
     try {
         const result = await fetch(`${BASE_URL}/movie/${encodeURIComponent(String(id))}`, {
             headers: {
-                Authorization: `Bearer ${apiKey}`,
+                Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
             },
         });
 

@@ -181,14 +181,14 @@ describe('Movie Routes', () => {
             expect(res.body.totalPages).toBe(1);
             expect(mockFetch).toHaveBeenCalledWith(
                 expect.stringContaining('primary_release_date.lte=2023-07-01'),
-                expect.objectContaining({ headers: { Authorization: 'Bearer undefined' } })
+                expect.objectContaining({ headers: { Authorization: 'Bearer test-api-key' } })
             );
         });
 
         it('returns 400 when query validation fails', async () => {
             const res = await request(app).get('/movies/search?page=one');
             expect(res.status).toBe(400);
-            expect(res.body.error).toMatch(/.*page.*/i);
+            expect(res.body.error).toMatch(/.*integer.*/i);
         });
 
         it('returns 502 when fetch throws', async () => {
