@@ -115,3 +115,50 @@ Everyone self-assigned tasks as needed for the final integrations to complete th
 Talked about when we estimate we would be done with our tasks and had PRs reviewed soon after.
 
 Meeting concluded.
+
+
+## Meeting 5 — Friday, April 20 2026
+
+**Meeting Scribe:** Riley Hopper
+
+### Agenda Item 1: Project Management.
+
+We went back over the general structure that we did in the previous week,  decided to keep the same kanban board style.
+
+
+### Agenda Item 2: Data Base Structure.
+
+Raiden started by creating the the general structure of the table, discussing general questions with the group about what elements should be within the table. We decided on only having tables for users, and reviews. We decided on this schema bellow:
+
+```SQL
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(32) DEFAULT 'user',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE reviews (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id),
+  media_id INT NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 and 10),
+  body TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  isMovie BOOLEAN DEFAULT true,
+  UNIQUE (user_id, media_id)
+);
+```
+
+
+Quick fire bullet list:
+- We decided to have all the reviews a user made be deleted with them.
+- 
+
+### Agenda Item 3: Setting up deliverables.
+
+We quickly setup the deliverables.
+
+Meeting end
