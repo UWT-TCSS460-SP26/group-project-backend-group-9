@@ -5,7 +5,8 @@ const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
 
 export const getMovies = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
-    const text: string = request.query.text as string;
+    const title: string = request.query.title as string;
+    const description: string = request.query.description as string;
     const lang: string = (request.query.lang || 'en') as string;
     const after: string = request.query.after as string;
     const before: string = request.query.before as string;
@@ -20,15 +21,16 @@ export const getMovies = async (request: Request, response: Response) => {
     };
 
     try {
-        const result = await fetch(
-            `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
-            {
-                // TMDB Requires the key in a custom header
-                headers: {
-                    Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
-                },
-            }
-        );
+        const query: string = title
+            ? `${BASE_URL}/search/movie?query=${title}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
+            : `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+
+        const result = await fetch(query, {
+            // TMDB Requires the key in a custom header
+            headers: {
+                Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
+            },
+        });
 
         const data = (await result.json()) as Record<string, unknown>;
 
@@ -39,7 +41,7 @@ export const getMovies = async (request: Request, response: Response) => {
 
         const movies: Record<string, unknown>[] = data.results as Record<string, unknown>[];
 
-        const keywords: string[] = text?.split(',') || [];
+        const keywords: string[] = description?.split(',') || [];
 
         const out: object = {
             code: 200,
@@ -50,13 +52,16 @@ export const getMovies = async (request: Request, response: Response) => {
                     keywords.length > 0
                         ? keywords.every(
                               (word) =>
-                                  (movie.title as string)
-                                      .toUpperCase()
-                                      .indexOf(word.toUpperCase()) > -1 ||
                                   (movie.overview as string)
                                       .toUpperCase()
                                       .indexOf(word.toUpperCase()) > -1
                           )
+                        : true
+                )
+                .filter((movie) =>
+                    title
+                        ? (!after || new Date(movie.release_date) >= new Date(after)) &&
+                          (!before || new Date(movie.release_date) <= new Date(before))
                         : true
                 )
                 .map((movie) => {
@@ -73,6 +78,7 @@ export const getMovies = async (request: Request, response: Response) => {
 
         response.json(out);
     } catch (_error) {
+        console.log(_error);
         response.status(502).json({ error: 'Network error', details: _error });
     }
 };

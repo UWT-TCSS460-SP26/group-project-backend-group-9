@@ -111,27 +111,35 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
-                - name: text
+                - name: title
                   in: query
                   required: false
                   schema:
                       type: string
                       example: Nimona
-                  description: Search for (case-insensitive) words within the title and description. Comma separated list
+                  description: Search for (case-insensitive) words within the title.
+                - name: description
+                  in: query
+                  required: false
+                  explode: false
+                  schema:
+                      type: array
+                      example: [knight, crime]
+                  description: Filter results for (case-insensitive) words within the description. Comma separated list
                 - name: after
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2022-05-17
-                  description: Earliest release date allowed among search results (inclusive)
+                  description: Filter earliest release date allowed among search results (inclusive)
                 - name: before
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2026-03-22
-                  description: Latest release date allowed among search results (inclusive)
+                  description: Filter latest release date allowed among search results (inclusive)
                 - name: sort
                   in: query
                   required: false
@@ -139,7 +147,7 @@ paths:
                       type: string
                       default: popularity
                       enum: [title, popularity, date, rating]
-                  description: Field to sort on
+                  description: Field to sort on. If title parameter is included, uses the default value.
                 - name: order
                   in: query
                   required: false
@@ -147,7 +155,7 @@ paths:
                       type: string
                       default: desc
                       enum: [asc, desc]
-                  description: Sorting order
+                  description: Sorting order. If title parameter is included, uses the default value.
             responses:
                 '200':
                     description: One page of returned movies, with 0 - 20 movies per page.
@@ -266,27 +274,35 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
-                - name: text
+                - name: name
                   in: query
                   required: false
                   schema:
                       type: string
-                      example: Breaking,Bad
-                  description: Search for (case-insensitive) words within the title and description. Comma separated list
+                      example: Breaking Bad
+                  description: Search for (case-insensitive) words within the name.
+                - name: description
+                  in: query
+                  required: false
+                  explode: false
+                  schema:
+                      type: array
+                      example: [teacher, chemistry]
+                  description: Filter results for (case-insensitive) words within the description. Comma separated list
                 - name: after
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2007-01-13
-                  description: Earliest first air date allowed among search results (inclusive)
+                  description: Filter earliest first air date allowed among search results (inclusive)
                 - name: before
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2010-03-14
-                  description: Latest first air date allowed among search results (inclusive)
+                  description: Filter latest first air date allowed among search results (inclusive)
                 - name: sort
                   in: query
                   required: false
@@ -294,7 +310,7 @@ paths:
                       type: string
                       default: popularity
                       enum: [name, popularity, date, rating]
-                  description: Field to sort on
+                  description: Field to sort on. If name parameter is included, uses the default value.
                 - name: order
                   in: query
                   required: false
@@ -302,7 +318,7 @@ paths:
                       type: string
                       default: desc
                       enum: [asc, desc]
-                  description: Sorting order
+                  description: Sorting order. If name parameter is included, uses the default value.
             responses:
                 '200':
                     description: One page of returned shows, with 0 - 20 shows per page.
