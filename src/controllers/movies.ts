@@ -60,8 +60,8 @@ export const getMovies = async (request: Request, response: Response) => {
                 )
                 .filter((movie) =>
                     title
-                        ? (!after || new Date(movie.release_date) >= new Date(after)) &&
-                          (!before || new Date(movie.release_date) <= new Date(before))
+                        ? (!after || new Date(movie.release_date as string) >= new Date(after)) &&
+                          (!before || new Date(movie.release_date as string) <= new Date(before))
                         : true
                 )
                 .map((movie) => {
@@ -78,7 +78,6 @@ export const getMovies = async (request: Request, response: Response) => {
 
         response.json(out);
     } catch (_error) {
-        console.log(_error);
         response.status(502).json({ error: 'Network error', details: _error });
     }
 };

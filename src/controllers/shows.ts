@@ -105,8 +105,8 @@ export const getShows = async (request: Request, response: Response) => {
                 )
                 .filter((show) =>
                     name
-                        ? (!after || new Date(show.first_air_date) >= new Date(after)) &&
-                          (!before || new Date(show.first_air_date) <= new Date(before))
+                        ? (!after || new Date(show.first_air_date as string) >= new Date(after)) &&
+                          (!before || new Date(show.first_air_date as string) <= new Date(before))
                         : true
                 )
                 .map((show) => {
@@ -123,7 +123,6 @@ export const getShows = async (request: Request, response: Response) => {
 
         response.json(out);
     } catch (_error) {
-        console.log(_error);
         response.status(502).json({ error: 'Network error' });
     }
 };
