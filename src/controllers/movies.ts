@@ -22,7 +22,7 @@ export const getMovies = async (request: Request, response: Response) => {
 
     try {
         const query: string = title
-            ? `${BASE_URL}/search/movie?query=${title}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
+            ? `${BASE_URL}/search/movie?query=${encodeURIComponent(title)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
             : `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
 
         const result = await fetch(query, {
