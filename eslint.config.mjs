@@ -80,7 +80,8 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', 'jest.config.js', 'modules/'],
+    // src/generated/ contains auto-generated Prisma client files that must not be linted
+    ignores: ['dist/', 'node_modules/', 'coverage/', 'jest.config.js', 'modules/', 'src/generated/'],
   },
   prettierConfig,
 ];
