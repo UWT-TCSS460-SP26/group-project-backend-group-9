@@ -68,7 +68,7 @@ export const getShows = async (request: Request, response: Response) => {
 
     try {
         const query: string = name
-            ? `${BASE_URL}/search/tv?query=${name}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
+            ? `${BASE_URL}/search/tv?query=${encodeURIComponent(name)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
             : `${BASE_URL}/discover/tv?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
         const result = await fetch(query, {
             // TMDB Requires the key in a custom header
