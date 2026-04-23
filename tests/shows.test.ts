@@ -116,7 +116,7 @@ describe('Show routes', () => {
         it('returns 400 when query validation fails', async () => {
             const res = await request(app).get('/shows/search?page=one');
             expect(res.status).toBe(400);
-            expect(res.body.error).toMatch(/.*integer.*/i);
+            expect(res.body.details[0].message).toContain('expected number');
         });
 
         it('returns 502 when fetch throws', async () => {

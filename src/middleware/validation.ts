@@ -1,4 +1,70 @@
-import { Request, Response, NextFunction } from 'express';
+import { RequestHandler, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+
+// --- Schemas ---
+
+const IdParamSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
+const MovieSearchSchema = z.object({
+    page: z.coerce.number().int().min(0).optional(),
+    lang: z.string().trim().optional(),
+    title: z.string().trim().optional(),
+    description: z.string().trim().optional(),
+    after: z.iso.date().trim().optional(),
+    before: z.iso.date().trim().optional(),
+    sort: z.literal(['title', 'popularity', 'date', 'rating']).optional(),
+    order: z.literal(['asc', 'desc']).optional(),
+});
+
+const ShowSearchSchema = z.object({
+    page: z.coerce.number().int().min(0).optional(),
+    lang: z.string().trim().min(1).optional(),
+    name: z.string().trim().min(1).optional(),
+    description: z.string().trim().min(1).optional(),
+    after: z.iso.date().trim().optional(),
+    before: z.iso.date().trim().optional(),
+    sort: z.literal(['name', 'popularity', 'date', 'rating']).optional(),
+    order: z.literal(['asc', 'desc']).optional(),
+});
+
+/**
+ * Generic middleware factory. Parses `request[source]` against `schema`;
+ * on failure responds 400 with issue details, on success replaces the
+ * source with the parsed (and coerced) value so downstream handlers get
+ * properly typed data.
+ */
+const validate =
+    (source: 'body' | 'params' | 'query', schema: z.ZodType): RequestHandler =>
+    (request, response, next) => {
+        const result = schema.safeParse(request[source]);
+        if (!result.success) {
+            response.status(400).json({
+                error: 'Validation failed',
+                details: result.error.issues.map((i) => ({
+                    path: i.path.join('.'),
+                    message: i.message,
+                })),
+            });
+            return;
+        }
+        if (source !== 'query') request[source] = result.data;
+        next();
+    };
+
+// --- Middleware ---
+
+export const validateNumericId = validate('params', IdParamSchema);
+export const validateMovieSearchParams = validate('query', MovieSearchSchema);
+export const validateShowSearchParams = validate('query', ShowSearchSchema);
+
+// --- Types inferred from schemas (no hand-written interfaces needed) ---
+
+export type MovieSearch = z.infer<typeof MovieSearchSchema>;
+export type ShowSearch = z.infer<typeof ShowSearchSchema>;
+
+// Miscellaneous validation middleware
 
 /**
  * Validates that a required environment variable is set.
@@ -12,146 +78,4 @@ export const requireEnvVar = (key: string) => {
         }
         next();
     };
-};
-
-/**
- * Validates that a required parameter is present in the path or query
- */
-export const requireParam = (name: string) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        if (!request.query[name] && !request.params[name]) {
-            response.status(400).json({ error: `${name} parameter is required` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that a required parameter is present in the query
- */
-export const requireQueryParam = (name: string) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        if (!request.query[name]) {
-            response.status(400).json({ error: `${name} query parameter is required` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that a required parameter is present in the path
- */
-export const requirePathParam = (name: string) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        if (!request.params[name]) {
-            response.status(400).json({ error: `${name} path parameter is required` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that an enum type parameter has an allowed value
- */
-export const validateEnum = (name: string, options: string[]) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        const value: string = (request.params[name] || request.query[name]) as string;
-        if (value && !options.includes(value)) {
-            response.status(400).json({ error: `${value} is not one of ${options}` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that a number parameter is a number. Allows unset parameters.
- */
-export const validateInteger = (name: string) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        const value: number = Number(request.params[name] || request.query[name]);
-        if ((request.params[name] || request.query[name]) && !Number.isInteger(value)) {
-            response.status(400).json({ error: `${value} is not an integer` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that a number parameter is within the specified range
- */
-export const validateNumberRange = (name: string, min?: number, max?: number) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        const value: number = Number(request.params[name] || request.query[name]);
-        if (value && ((min && value < min) || (max && value > max))) {
-            response.status(400).json({ error: `${value} is not within the allowed range` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Validates that a date parameter matches the required format
- */
-export const validateDate = (name: string) => {
-    return (request: Request, response: Response, next: NextFunction) => {
-        const value: string = (request.params[name] || request.query[name]) as string;
-        const seg: string[] | undefined = value?.split('-');
-
-        if (
-            value &&
-            !(
-                seg[0].length === 4 &&
-                seg[1].length === 2 &&
-                Number.isInteger(Number(seg[1])) &&
-                Number(seg[1]) > 0 &&
-                Number(seg[1]) < 13 &&
-                seg[2].length === 2 &&
-                Number.isInteger(Number(seg[2])) &&
-                Number(seg[2]) > 0 &&
-                Number(seg[2]) < 32
-            )
-        ) {
-            response.status(400).json({ error: `${value} is not a YYYY-MM-DD formatted date` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Wraps up validation for movie search with possible 'page', 'text', 'after', 'before', 'sort',
- * and 'order' parameters
- */
-export const validateMovieSearch = () => {
-    return [
-        requireEnvVar('MOVIE_READ_KEY'),
-        validateInteger('page'),
-        validateNumberRange('page', 0),
-        validateDate('after'),
-        validateDate('before'),
-        validateEnum('sort', ['title', 'popularity', 'date', 'rating']),
-        validateEnum('order', ['asc', 'desc']),
-    ];
-};
-
-/**
- * Wraps up validation for show search search with possible 'page', 'text', 'after', 'before', 'sort',
- * and 'order' parameters
- */
-export const validateShowSearch = () => {
-    return [
-        requireEnvVar('MOVIE_READ_KEY'),
-        validateInteger('page'),
-        validateNumberRange('page', 0),
-        validateDate('after'),
-        validateDate('before'),
-        validateEnum('sort', ['name', 'popularity', 'date', 'rating']),
-        validateEnum('order', ['asc', 'desc']),
-    ];
 };

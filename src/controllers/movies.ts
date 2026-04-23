@@ -73,7 +73,7 @@ export const getMovies = async (request: Request, response: Response) => {
 
         response.json(out);
     } catch (_error) {
-        response.status(502).json({ error: 'Network error', details: _error });
+        response.status(502).json({ error: 'Network error' });
     }
 };
 
