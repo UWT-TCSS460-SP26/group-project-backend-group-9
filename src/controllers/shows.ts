@@ -51,7 +51,8 @@ export const getShowDetails = async (request: Request, response: Response) => {
 
 export const getShows = async (request: Request, response: Response) => {
     const page: number = Number(request.query.page) || 0;
-    const text: string = request.query.text as string;
+    const name: string = request.query.name as string;
+    const description: string = request.query.description as string;
     const lang: string = (request.query.lang || 'en') as string;
     const after: string = request.query.after as string;
     const before: string = request.query.before as string;
@@ -66,15 +67,15 @@ export const getShows = async (request: Request, response: Response) => {
     };
 
     try {
-        const result = await fetch(
-            `${BASE_URL}/discover/tv?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`,
-            {
-                // TMDB Requires the key in a custom header
-                headers: {
-                    Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
-                },
-            }
-        );
+        const query: string = name
+            ? `${BASE_URL}/search/tv?query=${encodeURIComponent(name)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
+            : `${BASE_URL}/discover/tv?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+        const result = await fetch(query, {
+            // TMDB Requires the key in a custom header
+            headers: {
+                Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
+            },
+        });
 
         const data = (await result.json()) as Record<string, unknown>;
 
@@ -85,7 +86,7 @@ export const getShows = async (request: Request, response: Response) => {
 
         const shows: Record<string, unknown>[] = data.results as Record<string, unknown>[];
 
-        const keywords: string[] = text?.split(',') || [];
+        const keywords: string[] = description?.split(',') || [];
 
         const out: object = {
             code: 200,
@@ -96,12 +97,16 @@ export const getShows = async (request: Request, response: Response) => {
                     keywords.length > 0
                         ? keywords.every(
                               (word) =>
-                                  (show.name as string).toUpperCase().indexOf(word.toUpperCase()) >
-                                      -1 ||
                                   ((show.overview as string) || '')
                                       .toUpperCase()
                                       .indexOf(word.toUpperCase()) > -1
                           )
+                        : true
+                )
+                .filter((show) =>
+                    name
+                        ? (!after || new Date(show.first_air_date as string) >= new Date(after)) &&
+                          (!before || new Date(show.first_air_date as string) <= new Date(before))
                         : true
                 )
                 .map((show) => {
