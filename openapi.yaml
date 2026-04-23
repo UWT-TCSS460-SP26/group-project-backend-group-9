@@ -6,7 +6,7 @@ info:
         **Deployed URL:** https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
 
         A RESTful API for the TCSS 460 group project.
-    version: 0.1.0
+    version: 0.2.0
 
 servers:
     - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
