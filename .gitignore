@@ -25,3 +25,4 @@ coverage/
 
 # Misc
 test.sh
+/src/generated/prisma
