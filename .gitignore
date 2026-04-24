@@ -22,3 +22,6 @@ yarn-error.log
 
 # Coverage
 coverage/
+
+# Misc
+test.sh
