@@ -1,12 +1,12 @@
 // Custom output keeps the generated client inside src/ so it's importable as a local path.
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // url      = env("DATABASE_URL")
 }
 
 model User {
@@ -30,7 +30,7 @@ model Review {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
+  
   @@unique([userId, tmdbId, mediaType])
 }
 
