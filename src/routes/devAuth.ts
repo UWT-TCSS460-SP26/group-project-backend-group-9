@@ -41,39 +41,46 @@ const router = Router();
  * script and then POST the same username here.
  */
 router.post('/dev-login', async (request: Request, response: Response): Promise<void> => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    response.status(500).json({ error: 'JWT_SECRET is not configured' });
-    return;
-  }
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        response.status(500).json({ error: 'JWT_SECRET is not configured' });
+        return;
+    }
 
-  const { username, email } = request.body as { username?: string; email?: string };
-  if (!username || typeof username !== 'string') {
-    response.status(400).json({ error: 'username is required' });
-    return;
-  }
+    const { email, role } = request.body as { email?: string; role?: unknown };
+    if (role !== undefined) {
+        response.status(400).json({ error: 'role is not a permitted field on dev-login' });
+        return;
+    }
+    if (!email || typeof email !== 'string') {
+        response.status(400).json({ error: 'email is required' });
+        return;
+    }
 
-  const user = await prisma.user.upsert({
-    where: { username },
-    update: {},
-    create: {
-      username,
-      email: email ?? `${username}@dev.local`,
-      role: 'user',
-    },
-  });
+    const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+            email,
+            password: 'dev-login-placeholder',
+            role: 'USER',
+        },
+    });
 
-  const token = jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    secret,
-    { expiresIn: '24h' },
-  );
+    const token = jwt.sign(
+        {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        },
+        secret,
+        { expiresIn: '24h' }
+    );
 
-  response.json({ token });
+    response.json({
+        token,
+        user: { id: user.id, email: user.email, role: user.role },
+    });
 });
 
 export default router;

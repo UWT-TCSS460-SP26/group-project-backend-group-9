@@ -3,7 +3,7 @@ import { statusRoutes } from './status';
 import { movieRoutes } from './movies';
 import { showsRoutes } from './shows';
 import { reviewRoutes } from './reviews';
-import { devAuthRoutes } from './devAuth';
+import devAuthRoutes from './devAuth';
 
 const routes = Router();
 

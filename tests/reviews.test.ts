@@ -10,8 +10,16 @@ const mockReview = {
     delete: jest.fn(),
 };
 
+const mockUser = {
+    upsert: jest.fn(),
+};
+
 jest.mock('../src/prisma', () => ({
-    prisma: { review: mockReview },
+    prisma: { review: mockReview, user: mockUser },
+}));
+
+jest.mock('../src/lib/prisma', () => ({
+    prisma: { review: mockReview, user: mockUser },
 }));
 
 import jwt from 'jsonwebtoken';
@@ -40,6 +48,7 @@ const sampleReview = {
 
 beforeEach(() => {
     Object.values(mockReview).forEach((m) => m.mockReset());
+    Object.values(mockUser).forEach((m) => m.mockReset());
 });
 
 describe('POST /reviews', () => {
@@ -363,6 +372,12 @@ describe('DELETE /reviews/:id', () => {
 
 describe('POST /auth/dev-login', () => {
     it('returns a signed JWT for a valid email', async () => {
+        mockUser.upsert.mockResolvedValue({
+            id: 7,
+            email: 'tester@example.com',
+            role: 'USER',
+        });
+
         const res = await request(app)
             .post('/auth/dev-login')
             .send({ email: 'tester@example.com' });
@@ -374,16 +389,18 @@ describe('POST /auth/dev-login', () => {
         expect(decoded.role).toBe('USER');
         expect(typeof decoded.sub).toBe('number');
         expect(res.body.user.email).toBe('tester@example.com');
+        expect(res.body.user.role).toBe('USER');
+        expect(res.body.user.id).toBe(7);
     });
 
-    it('honors the requested ADMIN role', async () => {
+    it('rejects role in the request body (no role escalation via dev-login)', async () => {
         const res = await request(app)
             .post('/auth/dev-login')
             .send({ email: 'admin@example.com', role: 'ADMIN' });
 
-        expect(res.status).toBe(200);
-        const decoded = jwt.verify(res.body.token, TEST_SECRET) as jwt.JwtPayload;
-        expect(decoded.role).toBe('ADMIN');
+        expect(res.status).toBe(400);
+        expect(res.body.error).toMatch(/role is not a permitted field/i);
+        expect(mockUser.upsert).not.toHaveBeenCalled();
     });
 
     it('returns 400 for missing email', async () => {
