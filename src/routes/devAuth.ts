@@ -41,39 +41,39 @@ const router = Router();
  * script and then POST the same username here.
  */
 router.post('/dev-login', async (request: Request, response: Response): Promise<void> => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    response.status(500).json({ error: 'JWT_SECRET is not configured' });
-    return;
-  }
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        response.status(500).json({ error: 'JWT_SECRET is not configured' });
+        return;
+    }
 
-  const { username, email } = request.body as { username?: string; email?: string };
-  if (!username || typeof username !== 'string') {
-    response.status(400).json({ error: 'username is required' });
-    return;
-  }
+    const { username, email } = request.body as { username?: string; email?: string };
+    if (!username || typeof username !== 'string') {
+        response.status(400).json({ error: 'username is required' });
+        return;
+    }
 
-  const user = await prisma.user.upsert({
-    where: { username },
-    update: {},
-    create: {
-      username,
-      email: email ?? `${username}@dev.local`,
-      role: 'user',
-    },
-  });
+    const user = await prisma.user.upsert({
+        where: { username },
+        update: {},
+        create: {
+            username,
+            email: email ?? `${username}@dev.local`,
+            role: 'USER',
+        },
+    });
 
-  const token = jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    secret,
-    { expiresIn: '24h' },
-  );
+    const token = jwt.sign(
+        {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        },
+        secret,
+        { expiresIn: '24h' }
+    );
 
-  response.json({ token });
+    response.json({ token });
 });
 
 export default router;
