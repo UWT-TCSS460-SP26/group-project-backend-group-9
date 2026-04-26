@@ -53,27 +53,35 @@ router.post('/dev-login', async (request: Request, response: Response): Promise<
         return;
     }
 
-    const user = await prisma.user.upsert({
-        where: { username },
-        update: {},
-        create: {
-            username,
-            email: email ?? `${username}@dev.local`,
-            role: 'USER',
-        },
-    });
+    try {
+        const user = await prisma.user.upsert({
+            where: { username },
+            update: {},
+            create: {
+                username,
+                email: email ?? `${username}@dev.local`,
+                role: 'USER',
+            },
+        });
 
-    const token = jwt.sign(
-        {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-        },
-        secret,
-        { expiresIn: '24h' }
-    );
+        const token = jwt.sign(
+            {
+                sub: user.id,
+                email: user.email,
+                role: user.role,
+            },
+            secret,
+            { expiresIn: '24h' }
+        );
 
-    response.json({ token });
+        response.json({ token });
+    } catch (error) {
+        if ((error as { code?: string })?.code === 'P2002') {
+            response.status(400).json({ error: 'Email already in use' });
+        } else {
+            response.status(500).json({ error: 'Server error' });
+        }
+    }
 });
 
 export default router;

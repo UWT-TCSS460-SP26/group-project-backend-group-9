@@ -43,6 +43,7 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
+
     /movies/{id}:
         get:
             tags: [Movies]
@@ -368,7 +369,7 @@ paths:
             description: |
                 Development-only endpoint that issues a signed JWT for the supplied email.
                 Used by tests and local clients to obtain a token without a real signup flow.
-                The role defaults to USER unless explicitly requested.
+                The role defaults to USER.
             requestBody:
                 required: true
                 content:
@@ -849,20 +850,15 @@ components:
 
         DevLoginRequest:
             type: object
-            required: [email]
+            required: [username, email]
             properties:
+                username:
+                    type: string
+                    example: tester
                 email:
                     type: string
                     format: email
                     example: test@example.com
-                role:
-                    type: string
-                    enum: [USER, ADMIN]
-                    default: USER
-                userId:
-                    type: integer
-                    description: Optional explicit user ID; defaults to a stable hash of the email
-                    example: 1
 
         DevLoginResponse:
             type: object
@@ -870,19 +866,7 @@ components:
                 token:
                     type: string
                     description: Signed JWT
-                user:
-                    type: object
-                    properties:
-                        id:
-                            type: integer
-                            example: 1
-                        email:
-                            type: string
-                            example: test@example.com
-                        role:
-                            type: string
-                            enum: [USER, ADMIN]
-                            example: USER
+                    example: abcABC.123QWeR...'
 
         ErrorResponse:
             type: object
