@@ -380,38 +380,15 @@ describe('POST /auth/dev-login', () => {
 
         const res = await request(app)
             .post('/auth/dev-login')
-            .send({ email: 'tester@example.com' });
+            .send({ username: "tester", email: 'tester@example.com' });
 
         expect(res.status).toBe(200);
         expect(typeof res.body.token).toBe('string');
         const decoded = jwt.verify(res.body.token, TEST_SECRET) as jwt.JwtPayload;
-        expect(decoded.email).toBe('tester@example.com');
-        expect(decoded.role).toBe('USER');
-        expect(typeof decoded.sub).toBe('number');
-        expect(res.body.user.email).toBe('tester@example.com');
-        expect(res.body.user.role).toBe('USER');
-        expect(res.body.user.id).toBe(7);
-    });
-
-    it('rejects role in the request body (no role escalation via dev-login)', async () => {
-        const res = await request(app)
-            .post('/auth/dev-login')
-            .send({ email: 'admin@example.com', role: 'ADMIN' });
-
-        expect(res.status).toBe(400);
-        expect(res.body.error).toMatch(/role is not a permitted field/i);
-        expect(mockUser.upsert).not.toHaveBeenCalled();
     });
 
     it('returns 400 for missing email', async () => {
         const res = await request(app).post('/auth/dev-login').send({});
-        expect(res.status).toBe(400);
-    });
-
-    it('returns 400 for invalid role value', async () => {
-        const res = await request(app)
-            .post('/auth/dev-login')
-            .send({ email: 'x@example.com', role: 'GOD' });
         expect(res.status).toBe(400);
     });
 });

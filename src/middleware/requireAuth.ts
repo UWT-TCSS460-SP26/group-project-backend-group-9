@@ -37,7 +37,7 @@ export const requireAuth = (request: Request, response: Response, next: NextFunc
     const token = header.slice('Bearer '.length).trim();
 
     try {
-        const payload = jwt.verify(token, secret) as AuthenticatedUser;
+        const payload = jwt.verify(token, secret) as unknown as AuthenticatedUser;
         request.user = payload;
         next();
     } catch {
