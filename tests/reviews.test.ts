@@ -380,11 +380,14 @@ describe('POST /auth/dev-login', () => {
 
         const res = await request(app)
             .post('/auth/dev-login')
-            .send({ username: "tester", email: 'tester@example.com' });
+            .send({ username: 'tester', email: 'tester@example.com' });
 
         expect(res.status).toBe(200);
         expect(typeof res.body.token).toBe('string');
         const decoded = jwt.verify(res.body.token, TEST_SECRET) as jwt.JwtPayload;
+        expect(decoded.email).toBe('tester@example.com');
+        expect(decoded.role).toBe('USER');
+        expect(typeof decoded.sub).toBe('number');
     });
 
     it('returns 400 for missing email', async () => {
