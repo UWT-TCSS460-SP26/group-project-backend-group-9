@@ -47,22 +47,18 @@ router.post('/dev-login', async (request: Request, response: Response): Promise<
         return;
     }
 
-    const { email, role } = request.body as { email?: string; role?: unknown };
-    if (role !== undefined) {
-        response.status(400).json({ error: 'role is not a permitted field on dev-login' });
-        return;
-    }
-    if (!email || typeof email !== 'string') {
-        response.status(400).json({ error: 'email is required' });
+    const { username, email } = request.body as { username?: string; email?: string };
+    if (!username || typeof username !== 'string') {
+        response.status(400).json({ error: 'username is required' });
         return;
     }
 
     const user = await prisma.user.upsert({
-        where: { email },
+        where: { username },
         update: {},
         create: {
-            email,
-            password: 'dev-login-placeholder',
+            username,
+            email: email ?? `${username}@dev.local`,
             role: 'USER',
         },
     });
@@ -77,10 +73,7 @@ router.post('/dev-login', async (request: Request, response: Response): Promise<
         { expiresIn: '24h' }
     );
 
-    response.json({
-        token,
-        user: { id: user.id, email: user.email, role: user.role },
-    });
+    response.json({ token });
 });
 
 export default router;

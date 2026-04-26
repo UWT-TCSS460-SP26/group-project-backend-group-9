@@ -10,13 +10,13 @@ jest.mock('@prisma/adapter-pg', () => ({
     PrismaPg: jest.fn(() => ({ _tag: 'MockAdapter' })),
 }));
 
-jest.mock('../src/generated/prisma', () => ({
+jest.mock('../src/generated/prisma/client', () => ({
     PrismaClient: jest.fn(() => ({ _tag: 'MockClient' })),
 }));
 
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma';
+import { PrismaClient } from '../src/generated/prisma/client';
 
 describe('Prisma singleton (src/prisma.ts)', () => {
     let prismaModule: typeof import('../src/prisma');
