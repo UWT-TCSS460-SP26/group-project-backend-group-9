@@ -7,13 +7,25 @@ import {
     updateReview,
 } from '../../controllers/reviews';
 import { requireAuth } from '../../middleware/requireAuth';
+import {
+    validateCreateReviewBody,
+    validateListReviewsQuery,
+    validateReviewIdParam,
+    validateUpdateReviewBody,
+} from '../../middleware/validation';
 
 const reviewRoutes = Router();
 
-reviewRoutes.get('/', listReviews);
-reviewRoutes.get('/:id', getReviewById);
-reviewRoutes.post('/', requireAuth, createReview);
-reviewRoutes.put('/:id', requireAuth, updateReview);
-reviewRoutes.delete('/:id', requireAuth, deleteReview);
+reviewRoutes.get('/', validateListReviewsQuery, listReviews);
+reviewRoutes.get('/:id', validateReviewIdParam, getReviewById);
+reviewRoutes.post('/', requireAuth, validateCreateReviewBody, createReview);
+reviewRoutes.put(
+    '/:id',
+    requireAuth,
+    validateReviewIdParam,
+    validateUpdateReviewBody,
+    updateReview
+);
+reviewRoutes.delete('/:id', requireAuth, validateReviewIdParam, deleteReview);
 
 export { reviewRoutes };

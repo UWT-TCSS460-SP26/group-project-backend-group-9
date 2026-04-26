@@ -1,47 +1,9 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 
-const MEDIA_TYPES = ['MOVIE', 'TV'] as const;
-type MediaType = (typeof MEDIA_TYPES)[number];
-
-const isMediaType = (value: unknown): value is MediaType =>
-    typeof value === 'string' && (MEDIA_TYPES as readonly string[]).includes(value);
-
-const isValidScore = (value: unknown): value is number =>
-    typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10;
-
-const isNonEmptyString = (value: unknown): value is string =>
-    typeof value === 'string' && value.trim().length > 0;
-
-const parseIntegerParam = (raw: string | string[] | undefined): number | null => {
-    if (typeof raw !== 'string' || !/^-?\d+$/.test(raw)) return null;
-    return Number(raw);
-};
-
 export const createReview = async (request: Request, response: Response) => {
     const user = request.user!;
-    const { tmdbId, mediaType, title, body, score } = request.body ?? {};
-
-    if (typeof tmdbId !== 'number' || !Number.isInteger(tmdbId)) {
-        response.status(400).json({ error: 'tmdbId must be an integer' });
-        return;
-    }
-    if (!isMediaType(mediaType)) {
-        response.status(400).json({ error: 'mediaType must be MOVIE or TV' });
-        return;
-    }
-    if (!isNonEmptyString(title)) {
-        response.status(400).json({ error: 'title is required' });
-        return;
-    }
-    if (!isNonEmptyString(body)) {
-        response.status(400).json({ error: 'body is required' });
-        return;
-    }
-    if (!isValidScore(score)) {
-        response.status(400).json({ error: 'score must be an integer between 1 and 10' });
-        return;
-    }
+    const { tmdbId, mediaType, title, body, score } = request.body;
 
     try {
         const created = await prisma.review.create({
@@ -58,11 +20,7 @@ export const createReview = async (request: Request, response: Response) => {
 };
 
 export const getReviewById = async (request: Request, response: Response) => {
-    const id = parseIntegerParam(request.params.id);
-    if (id === null) {
-        response.status(400).json({ error: 'id must be an integer' });
-        return;
-    }
+    const id = request.parsedParams!.id!;
 
     const review = await prisma.review.findUnique({ where: { id } });
     if (!review) {
@@ -73,47 +31,13 @@ export const getReviewById = async (request: Request, response: Response) => {
 };
 
 export const listReviews = async (request: Request, response: Response) => {
-    const pageRaw = request.query.page as string | undefined;
-    const limitRaw = request.query.limit as string | undefined;
-    const tmdbIdRaw = request.query.tmdbId as string | undefined;
-    const mediaTypeRaw = request.query.mediaType as string | undefined;
+    const parsed = request.parsedQuery ?? {};
+    const page = parsed.page ?? 1;
+    const limit = parsed.limit ?? 20;
 
-    let page = 1;
-    if (pageRaw !== undefined) {
-        const parsed = parseIntegerParam(pageRaw);
-        if (parsed === null || parsed < 1) {
-            response.status(400).json({ error: 'page must be a positive integer' });
-            return;
-        }
-        page = parsed;
-    }
-
-    let limit = 20;
-    if (limitRaw !== undefined) {
-        const parsed = parseIntegerParam(limitRaw);
-        if (parsed === null || parsed < 1) {
-            response.status(400).json({ error: 'limit must be a positive integer' });
-            return;
-        }
-        limit = Math.min(parsed, 100);
-    }
-
-    const where: { tmdbId?: number; mediaType?: MediaType } = {};
-    if (tmdbIdRaw !== undefined) {
-        const parsed = parseIntegerParam(tmdbIdRaw);
-        if (parsed === null) {
-            response.status(400).json({ error: 'tmdbId must be an integer' });
-            return;
-        }
-        where.tmdbId = parsed;
-    }
-    if (mediaTypeRaw !== undefined) {
-        if (!isMediaType(mediaTypeRaw)) {
-            response.status(400).json({ error: 'mediaType must be MOVIE or TV' });
-            return;
-        }
-        where.mediaType = mediaTypeRaw;
-    }
+    const where: { tmdbId?: number; mediaType?: 'MOVIE' | 'TV' } = {};
+    if (parsed.tmdbId !== undefined) where.tmdbId = parsed.tmdbId;
+    if (parsed.mediaType !== undefined) where.mediaType = parsed.mediaType;
 
     const [results, total] = await Promise.all([
         prisma.review.findMany({
@@ -130,25 +54,8 @@ export const listReviews = async (request: Request, response: Response) => {
 
 export const updateReview = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = parseIntegerParam(request.params.id);
-    if (id === null) {
-        response.status(400).json({ error: 'id must be an integer' });
-        return;
-    }
-
-    const { title, body, score } = request.body ?? {};
-    if (!isNonEmptyString(title)) {
-        response.status(400).json({ error: 'title is required' });
-        return;
-    }
-    if (!isNonEmptyString(body)) {
-        response.status(400).json({ error: 'body is required' });
-        return;
-    }
-    if (!isValidScore(score)) {
-        response.status(400).json({ error: 'score must be an integer between 1 and 10' });
-        return;
-    }
+    const id = request.parsedParams!.id!;
+    const { title, body, score } = request.body;
 
     const existing = await prisma.review.findUnique({ where: { id } });
     if (!existing) {
@@ -170,11 +77,7 @@ export const updateReview = async (request: Request, response: Response) => {
 
 export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = parseIntegerParam(request.params.id);
-    if (id === null) {
-        response.status(400).json({ error: 'id must be an integer' });
-        return;
-    }
+    const id = request.parsedParams!.id!;
 
     const existing = await prisma.review.findUnique({ where: { id } });
     if (!existing) {
