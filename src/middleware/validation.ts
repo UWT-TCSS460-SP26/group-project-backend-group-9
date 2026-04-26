@@ -289,6 +289,51 @@ export const validateUpdateReviewBody = (
     next();
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Users validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const USER_ROLES = ['USER', 'ADMIN'] as const;
+type UserRole = (typeof USER_ROLES)[number];
+
+const isUserRole = (value: unknown): value is UserRole =>
+    typeof value === 'string' && (USER_ROLES as readonly string[]).includes(value);
+
+/** Validates :id path param for user routes. */
+export const validateUserIdParam = parseIntPathParam('id', 'id must be an integer');
+
+/**
+ * Validates PUT /users/:id body. Only `email` and `role` are validated;
+ * other fields (including password) are ignored by the controller. An empty
+ * body is allowed (no fields to update is a valid no-op).
+ *
+ * Note: middleware does NOT enforce the "only admins may change role" rule;
+ * that's the controller's responsibility (defense in depth).
+ */
+export const validateUpdateUserBody = (
+    request: Request,
+    response: Response,
+    next: NextFunction
+): void => {
+    const { email, role } = request.body ?? {};
+
+    if (email !== undefined) {
+        if (typeof email !== 'string' || !EMAIL_PATTERN.test(email)) {
+            response.status(400).json({ error: 'email must be a valid email address' });
+            return;
+        }
+    }
+
+    if (role !== undefined && !isUserRole(role)) {
+        response.status(400).json({ error: 'role must be USER or ADMIN' });
+        return;
+    }
+
+    next();
+};
+
 /** Validates GET /reviews query string: page, limit, tmdbId, mediaType. */
 export const validateListReviewsQuery = [
     parseIntQueryParam('page', { min: 1 }, 'page must be a positive integer'),

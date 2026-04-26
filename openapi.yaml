@@ -593,6 +593,160 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ErrorResponse'
 
+    /users/me:
+        get:
+            tags: [Users]
+            summary: Get the current user
+            description: Returns the profile of the authenticated user. The password field is never returned.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Current user profile
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: Authenticated user no longer exists
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
+    /users/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                  type: integer
+              description: User ID
+        get:
+            tags: [Users]
+            summary: Get a user by ID
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: User found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '400':
+                    description: Invalid user ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        put:
+            tags: [Users]
+            summary: Update a user
+            description: |
+                Updates `email` and/or `role` on a user. The owner may update their own
+                email; only ADMIN may change a user's role. The password field cannot
+                be modified through this endpoint (Sprint 3 will add password change
+                via Auth-Squared). Unknown fields in the request body are silently ignored.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateUserRequest'
+            responses:
+                '200':
+                    description: User updated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is neither the owner nor an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '409':
+                    description: Email already in use by another user
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        delete:
+            tags: [Users]
+            summary: Delete a user
+            description: |
+                Permanently removes the user and all associated reviews (cascade delete).
+                The owner may delete their own account; ADMIN may delete any account.
+            security:
+                - bearerAuth: []
+            responses:
+                '204':
+                    description: User deleted
+                '400':
+                    description: Invalid user ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is neither the owner nor an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
@@ -883,6 +1037,38 @@ components:
                             type: string
                             enum: [USER, ADMIN]
                             example: USER
+
+        User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                email:
+                    type: string
+                    format: email
+                    example: alice@example.com
+                role:
+                    type: string
+                    enum: [USER, ADMIN]
+                    example: USER
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-04-25T14:00:00.000Z
+            required: [id, email, role, createdAt]
+
+        UpdateUserRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                    format: email
+                    example: newemail@example.com
+                role:
+                    type: string
+                    enum: [USER, ADMIN]
+                    description: Only admins may change roles. If a non-admin sends this field, it is silently ignored.
 
         ErrorResponse:
             type: object
