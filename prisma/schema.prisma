@@ -1,0 +1,48 @@
+// Custom output keeps the generated client inside src/ so it's importable as a local path.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  reviews   Review[]
+  
+  @@map("users")
+}
+
+// @@unique prevents a user from submitting more than one review per TMDB title.
+model Review {
+  id        Int       @id @default(autoincrement())
+  tmdbId    Int
+  mediaType MediaType
+  title     String
+  body      String
+  score     Int
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@unique([userId, tmdbId, mediaType])
+  @@map("reviews")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MediaType {
+  MOVIE
+  TV
+}

@@ -6,7 +6,7 @@ info:
         **Deployed URL:** https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
 
         A RESTful API for the TCSS 460 group project.
-    version: 0.1.0
+    version: 0.2.0
 
 servers:
     - url: https://tcss460-team-9-api-72a4ffcce368.herokuapp.com
@@ -21,6 +21,10 @@ tags:
       description: Movie endpoints
     - name: Shows
       description: TV show endpoints
+    - name: Reviews
+      description: User-authored reviews of movies and shows
+    - name: Auth
+      description: Development-only authentication endpoints
 
 paths:
     /status:
@@ -39,6 +43,7 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
+
     /movies/{id}:
         get:
             tags: [Movies]
@@ -111,27 +116,35 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
-                - name: text
+                - name: title
                   in: query
                   required: false
                   schema:
                       type: string
                       example: Nimona
-                  description: Search for (case-insensitive) words within the title and description. Comma separated list
+                  description: Search for (case-insensitive) words within the title.
+                - name: description
+                  in: query
+                  required: false
+                  explode: false
+                  schema:
+                      type: array
+                      example: [knight, crime]
+                  description: Filter results for (case-insensitive) words within the description. Comma separated list
                 - name: after
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2022-05-17
-                  description: Earliest release date allowed among search results (inclusive)
+                  description: Filter earliest release date allowed among search results (inclusive)
                 - name: before
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2026-03-22
-                  description: Latest release date allowed among search results (inclusive)
+                  description: Filter latest release date allowed among search results (inclusive)
                 - name: sort
                   in: query
                   required: false
@@ -139,7 +152,7 @@ paths:
                       type: string
                       default: popularity
                       enum: [title, popularity, date, rating]
-                  description: Field to sort on
+                  description: Field to sort on. If title parameter is included, uses the default value.
                 - name: order
                   in: query
                   required: false
@@ -147,7 +160,7 @@ paths:
                       type: string
                       default: desc
                       enum: [asc, desc]
-                  description: Sorting order
+                  description: Sorting order. If title parameter is included, uses the default value.
             responses:
                 '200':
                     description: One page of returned movies, with 0 - 20 movies per page.
@@ -266,27 +279,35 @@ paths:
                       example: en
                       default: en
                   description: ISO-639 language code
-                - name: text
+                - name: name
                   in: query
                   required: false
                   schema:
                       type: string
-                      example: Breaking,Bad
-                  description: Search for (case-insensitive) words within the title and description. Comma separated list
+                      example: Breaking Bad
+                  description: Search for (case-insensitive) words within the name.
+                - name: description
+                  in: query
+                  required: false
+                  explode: false
+                  schema:
+                      type: array
+                      example: [teacher, chemistry]
+                  description: Filter results for (case-insensitive) words within the description. Comma separated list
                 - name: after
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2007-01-13
-                  description: Earliest first air date allowed among search results (inclusive)
+                  description: Filter earliest first air date allowed among search results (inclusive)
                 - name: before
                   in: query
                   required: false
                   schema:
                       type: string
                       example: 2010-03-14
-                  description: Latest first air date allowed among search results (inclusive)
+                  description: Filter latest first air date allowed among search results (inclusive)
                 - name: sort
                   in: query
                   required: false
@@ -294,7 +315,7 @@ paths:
                       type: string
                       default: popularity
                       enum: [name, popularity, date, rating]
-                  description: Field to sort on
+                  description: Field to sort on. If name parameter is included, uses the default value.
                 - name: order
                   in: query
                   required: false
@@ -302,7 +323,7 @@ paths:
                       type: string
                       default: desc
                       enum: [asc, desc]
-                  description: Sorting order
+                  description: Sorting order. If name parameter is included, uses the default value.
             responses:
                 '200':
                     description: One page of returned shows, with 0 - 20 shows per page.
@@ -341,9 +362,400 @@ paths:
                                         type: string
                                         example: Network error
 
+    /auth/dev-login:
+        post:
+            tags: [Auth]
+            summary: Mint a development JWT
+            description: |
+                Development-only endpoint that issues a signed JWT for the supplied email.
+                Used by tests and local clients to obtain a token without a real signup flow.
+                The role defaults to USER.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DevLoginRequest'
+            responses:
+                '200':
+                    description: Token issued
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DevLoginResponse'
+                '400':
+                    description: Missing or invalid email
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '500':
+                    description: Server is missing JWT_SECRET configuration
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
+    /reviews:
+        get:
+            tags: [Reviews]
+            summary: List reviews
+            description: |
+                Returns a paginated list of reviews, newest first. Optionally filter by
+                `tmdbId` and `mediaType` to fetch all reviews for a specific title.
+            parameters:
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 1
+                      minimum: 1
+                  description: 1-indexed page number
+                - name: limit
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 20
+                      minimum: 1
+                      maximum: 100
+                  description: Page size (capped at 100)
+                - name: tmdbId
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      example: 961323
+                  description: Filter to reviews of a specific TMDB title
+                - name: mediaType
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [MOVIE, TV]
+                  description: Filter to reviews of a specific media type
+            responses:
+                '200':
+                    description: Paginated list of reviews
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReviewListResponse'
+                '400':
+                    description: Invalid query parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        post:
+            tags: [Reviews]
+            summary: Create a review
+            description: |
+                Creates a review authored by the authenticated user. Returns 409 if the
+                user has already reviewed this `(tmdbId, mediaType)` pair — clients must
+                use PUT to edit instead.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateReviewRequest'
+            responses:
+                '201':
+                    description: Review created
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Review'
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '409':
+                    description: User has already reviewed this title
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
+    /reviews/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                  type: integer
+              description: Review ID
+        get:
+            tags: [Reviews]
+            summary: Get a review by ID
+            responses:
+                '200':
+                    description: Review found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Review'
+                '400':
+                    description: Invalid review ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: Review not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        put:
+            tags: [Reviews]
+            summary: Update a review
+            description: |
+                Replaces `title`, `body`, and `score` on an existing review. Only the
+                original author may edit a review — admins cannot edit other users' reviews.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateReviewRequest'
+            responses:
+                '200':
+                    description: Review updated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Review'
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is not the review author
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: Review not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        delete:
+            tags: [Reviews]
+            summary: Delete a review
+            description: |
+                Deletes a review. The author may delete their own review; users with the
+                ADMIN role may delete any review.
+            security:
+                - bearerAuth: []
+            responses:
+                '204':
+                    description: Review deleted
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is neither the author nor an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: Review not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
+    /users/me:
+        get:
+            tags: [Users]
+            summary: Get the current user
+            description: Returns the profile of the authenticated user. The password field is never returned.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Current user profile
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: Authenticated user no longer exists
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
+    /users/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                  type: integer
+              description: User ID
+        get:
+            tags: [Users]
+            summary: Get a user by ID
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: User found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '400':
+                    description: Invalid user ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        put:
+            tags: [Users]
+            summary: Update a user
+            description: |
+                Updates `email` and/or `role` on a user. The owner may update their own
+                email; only ADMIN may change a user's role. The password field cannot
+                be modified through this endpoint (Sprint 3 will add password change
+                via Auth-Squared). Unknown fields in the request body are silently ignored.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateUserRequest'
+            responses:
+                '200':
+                    description: User updated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is neither the owner nor an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '409':
+                    description: Email already in use by another user
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+        delete:
+            tags: [Users]
+            summary: Delete a user
+            description: |
+                Permanently removes the user and all associated reviews (cascade delete).
+                The owner may delete their own account; ADMIN may delete any account.
+            security:
+                - bearerAuth: []
+            responses:
+                '204':
+                    description: User deleted
+                '400':
+                    description: Invalid user ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '403':
+                    description: Caller is neither the owner nor an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+
 # ── Schemas ───────────────────────────────────────────────────
 
 components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
     schemas:
         MoviesSearchResponse:
             type: object
@@ -497,3 +909,154 @@ components:
                     items:
                         type: string
                     example: [Drama, Crime]
+
+        Review:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 42
+                tmdbId:
+                    type: integer
+                    example: 961323
+                mediaType:
+                    type: string
+                    enum: [MOVIE, TV]
+                    example: MOVIE
+                title:
+                    type: string
+                    example: A surprisingly tender story
+                body:
+                    type: string
+                    example: I went in expecting a CGI cash grab and got something genuinely moving.
+                score:
+                    type: integer
+                    minimum: 1
+                    maximum: 10
+                    example: 9
+                userId:
+                    type: integer
+                    example: 1
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-04-25T18:30:00.000Z
+                updatedAt:
+                    type: string
+                    format: date-time
+                    example: 2026-04-25T18:30:00.000Z
+
+        CreateReviewRequest:
+            type: object
+            required: [tmdbId, mediaType, title, body, score]
+            properties:
+                tmdbId:
+                    type: integer
+                    example: 961323
+                mediaType:
+                    type: string
+                    enum: [MOVIE, TV]
+                title:
+                    type: string
+                    minLength: 1
+                    example: A surprisingly tender story
+                body:
+                    type: string
+                    minLength: 1
+                    example: I went in expecting a CGI cash grab and got something genuinely moving.
+                score:
+                    type: integer
+                    minimum: 1
+                    maximum: 10
+                    example: 9
+
+        UpdateReviewRequest:
+            type: object
+            required: [title, body, score]
+            properties:
+                title:
+                    type: string
+                    minLength: 1
+                body:
+                    type: string
+                    minLength: 1
+                score:
+                    type: integer
+                    minimum: 1
+                    maximum: 10
+
+        ReviewListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    example: 1
+                limit:
+                    type: integer
+                    example: 20
+                total:
+                    type: integer
+                    example: 137
+                results:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Review'
+
+        DevLoginRequest:
+            type: object
+            required: [username, email]
+            properties:
+                username:
+                    type: string
+                    example: tester
+                email:
+                    type: string
+                    format: email
+                    example: test@example.com
+
+        DevLoginResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                    description: Signed JWT
+                    example: abcABC.123QWeR...'
+
+        User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                email:
+                    type: string
+                    format: email
+                    example: alice@example.com
+                role:
+                    type: string
+                    enum: [USER, ADMIN]
+                    example: USER
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-04-25T14:00:00.000Z
+            required: [id, email, role, createdAt]
+
+        UpdateUserRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                    format: email
+                    example: newemail@example.com
+                role:
+                    type: string
+                    enum: [USER, ADMIN]
+                    description: Only admins may change roles. If a non-admin sends this field, it is silently ignored.
+
+        ErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: Review not found
