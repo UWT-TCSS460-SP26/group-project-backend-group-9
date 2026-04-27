@@ -91,54 +91,6 @@ export const validateShowSearchParams = validate('query', ShowSearchSchema);
 export type MovieSearch = z.infer<typeof MovieSearchSchema>;
 export type ShowSearch = z.infer<typeof ShowSearchSchema>;
 
-// Miscellaneous validation middleware
-
-/**
- * Validates that a required environment variable is set.
- * Returns a middleware function that checks for the given key in process.env.
- */
-export const requireEnvVar = (key: string) => {
-    return (_request: Request, response: Response, next: NextFunction) => {
-        if (!process.env[key]) {
-            response.status(500).json({ error: `${key} is not configured` });
-            return;
-        }
-        next();
-    };
-};
-
-/**
- * Wraps up validation for movie search with possible 'page', 'text', 'after', 'before', 'sort',
- * and 'order' parameters
- */
-export const validateMovieSearch = () => {
-    return [
-        requireEnvVar('MOVIE_READ_KEY'),
-        validateInteger('page'),
-        validateNumberRange('page', 0),
-        validateDate('after'),
-        validateDate('before'),
-        validateEnum('sort', ['title', 'popularity', 'date', 'rating']),
-        validateEnum('order', ['asc', 'desc']),
-    ];
-};
-
-/**
- * Wraps up validation for show search search with possible 'page', 'text', 'after', 'before', 'sort',
- * and 'order' parameters
- */
-export const validateShowSearch = () => {
-    return [
-        requireEnvVar('MOVIE_READ_KEY'),
-        validateInteger('page'),
-        validateNumberRange('page', 0),
-        validateDate('after'),
-        validateDate('before'),
-        validateEnum('sort', ['name', 'popularity', 'date', 'rating']),
-        validateEnum('order', ['asc', 'desc']),
-    ];
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Reviews validation
 // ─────────────────────────────────────────────────────────────────────────────
