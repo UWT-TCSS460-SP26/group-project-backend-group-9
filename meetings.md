@@ -112,6 +112,6 @@ Everyone self-assigned tasks as needed for the final integrations to complete th
 
 ### Agenda Item 2: Wrap-up
 
-Talked about when we estimate we would be done with our tasks and had PRs reviewed soon after.
+Talked about when we estimate we would be done with our tasks and had PRs reviewed after.
 
 Meeting concluded.
