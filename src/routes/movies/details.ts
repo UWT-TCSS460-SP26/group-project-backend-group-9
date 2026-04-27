@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { getMovieDetails } from '../../controllers/movies';
-import { requirePathParam, validateInteger } from '../../middleware/validation';
+import { requireEnvVar, validateNumericId } from '../../middleware/validation';
 
 const detailsRoutes = Router();
 
-detailsRoutes.get('/:id', requirePathParam('id'), validateInteger('id'), getMovieDetails);
+detailsRoutes.get('/:id', requireEnvVar('MOVIE_READ_KEY'), validateNumericId, getMovieDetails);
 
 export { detailsRoutes };
