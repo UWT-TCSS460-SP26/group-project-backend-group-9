@@ -22,7 +22,6 @@ jest.mock('../src/lib/prisma', () => ({
     prisma: { review: mockReview, user: mockUser },
 }));
 
-import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 const TEST_SECRET = 'test-secret-for-jwt-signing-only';

@@ -6,7 +6,7 @@ import {
     listReviews,
     updateReview,
 } from '../../controllers/reviews';
-import { requireAuth } from '../../middleware/requireAuth';
+import { requireAuth, requireRoleAtLeast } from '../../middleware/requireAuth';
 import {
     validateCreateReviewBody,
     validateListReviewsQuery,

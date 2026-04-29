@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/requireAuth';
+import { requireAuth, requireRoleAtLeast } from '../../middleware/requireAuth';
 import { validateUserIdParam, validateUpdateUserBody } from '../../middleware/validation';
 import { getMe, getUserById, updateUser, deleteUser } from '../../controllers/users';
 
@@ -19,7 +19,7 @@ const userRoutes = Router();
 // value and validateUserIdParam returns 400.
 userRoutes.get('/me', requireAuth, getMe);
 userRoutes.get('/:id', requireAuth, validateUserIdParam, getUserById);
-userRoutes.put('/:id', requireAuth, validateUserIdParam, validateUpdateUserBody, updateUser);
-userRoutes.delete('/:id', requireAuth, validateUserIdParam, deleteUser);
+userRoutes.put('/:id', requireAuth, requireRoleAtLeast('Moderator'), validateUserIdParam, validateUpdateUserBody, updateUser);
+userRoutes.delete('/:id', requireAuth, requireRoleAtLeast('Admin'), validateUserIdParam, deleteUser);
 
 export { userRoutes };
