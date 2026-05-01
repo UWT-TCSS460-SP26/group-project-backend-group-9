@@ -38,8 +38,8 @@ model Review {
 }
 
 enum Role {
-  USER
-  ADMIN
+  User
+  Admin
 }
 
 enum MediaType {
