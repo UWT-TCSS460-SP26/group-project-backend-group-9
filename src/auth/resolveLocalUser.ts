@@ -1,6 +1,6 @@
 import type { Request } from 'express';
-import { prisma } from '@/prisma';
-import type { UserModel } from '@/generated/prisma/models';
+import { prisma } from '../prisma';
+import type { UserModel } from '../generated/prisma/models';
 
 /**
  * Upserts a local User row keyed by the auth-squared `sub` claim, then returns
