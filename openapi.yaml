@@ -966,6 +966,26 @@ components:
                     items:
                         $ref: '#/components/schemas/Review'
 
+        User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                email:
+                    type: string
+                    format: email
+                    example: alice@example.com
+                role:
+                    type: string
+                    enum: [User, Admin]
+                    example: User
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-04-25T14:00:00.000Z
+            required: [id, email, role, createdAt]
+
         UpdateUserRequest:
             type: object
             properties:

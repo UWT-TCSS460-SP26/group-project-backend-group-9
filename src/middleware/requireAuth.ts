@@ -6,7 +6,7 @@ export const ROLE_HIERARCHY = ['User', 'Moderator', 'Admin', 'SuperAdmin', 'Owne
 export type Role = (typeof ROLE_HIERARCHY)[number];
 
 export interface AuthenticatedUser {
-    sub: number;
+    sub: string;
     email?: string;
     role: Role;
     iat?: number;

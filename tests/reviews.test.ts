@@ -28,9 +28,9 @@ import request from 'supertest';
 import { app } from '../src/app';
 
 const authHeader = (
-    sub: number,
+    sub: string,
     role: 'User' | 'Admin' = 'User',
-    email: string = 'u@example.com'
+    email: string = 'alice@example.com'
 ) => ({
     role: role,
     iat: Math.floor(new Date().getTime()),
@@ -72,7 +72,7 @@ describe('POST /reviews', () => {
 
         const res = await request(app)
             .post('/reviews')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(validBody);
 
         expect(res.status).toBe(201);
@@ -107,7 +107,7 @@ describe('POST /reviews', () => {
     ])('returns 400 for %s', async (_label, payload) => {
         const res = await request(app)
             .post('/reviews')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(payload);
         expect(res.status).toBe(400);
         expect(mockReview.create).not.toHaveBeenCalled();
@@ -119,7 +119,7 @@ describe('POST /reviews', () => {
 
         const res = await request(app)
             .post('/reviews')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(validBody);
 
         expect(res.status).toBe(409);
@@ -241,7 +241,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
 
         expect(res.status).toBe(200);
@@ -260,9 +260,15 @@ describe('PUT /reviews/:id', () => {
     it('returns 403 when caller is not the author (even as Admin)', async () => {
         mockReview.findUnique.mockResolvedValue(sampleReview); // userId: 1
 
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        // update with a different user (id=2)
         const res = await request(app)
             .put('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')))
+            .set('x-test-user', JSON.stringify(authHeader('99', 'Admin')))
             .send(updateBody);
 
         expect(res.status).toBe(403);
@@ -274,7 +280,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
 
         expect(res.status).toBe(404);
@@ -285,7 +291,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send({ ...updateBody, score: 11 });
 
         expect(res.status).toBe(400);
@@ -295,7 +301,7 @@ describe('PUT /reviews/:id', () => {
     it('returns 400 for non-integer id', async () => {
         const res = await request(app)
             .put('/reviews/abc')
-            .set('x-test-user', JSON.stringify(authHeader(1)))
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
         expect(res.status).toBe(400);
     });
@@ -308,7 +314,7 @@ describe('DELETE /reviews/:id', () => {
 
         const res = await request(app)
             .delete('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(1)));
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
         expect(res.status).toBe(204);
         expect(mockReview.delete).toHaveBeenCalledWith({ where: { id: 42 } });
@@ -318,9 +324,15 @@ describe('DELETE /reviews/:id', () => {
         mockReview.findUnique.mockResolvedValue(sampleReview); // userId: 1
         mockReview.delete.mockResolvedValue(sampleReview);
 
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        // delete with a different user (id=2)
         const res = await request(app)
             .delete('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')));
+            .set('x-test-user', JSON.stringify(authHeader('99', 'Admin')));
 
         expect(res.status).toBe(204);
     });
@@ -332,10 +344,15 @@ describe('DELETE /reviews/:id', () => {
 
     it('returns 403 when caller is neither author nor admin', async () => {
         mockReview.findUnique.mockResolvedValue(sampleReview);
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
+        // delete with a different user (id=2)
         const res = await request(app)
             .delete('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(99, 'User')));
+            .set('x-test-user', JSON.stringify(authHeader('99', 'User')));
 
         expect(res.status).toBe(403);
         expect(mockReview.delete).not.toHaveBeenCalled();
@@ -346,7 +363,7 @@ describe('DELETE /reviews/:id', () => {
 
         const res = await request(app)
             .delete('/reviews/42')
-            .set('x-test-user', JSON.stringify(authHeader(1)));
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
         expect(res.status).toBe(404);
     });

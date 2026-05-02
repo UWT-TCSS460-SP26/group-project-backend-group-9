@@ -1,21 +1,15 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
-import { Role } from '../middleware/requireAuth';
+import { resolveLocalUser } from '../auth/resolveLocalUser';
 
 export const createReview = async (request: Request, response: Response) => {
-    const user: {
-        role: Role;
-        iat?: number;
-        exp?: number;
-        aud?: string | string[];
-        iss?: string;
-        sub: number;
-    } = request.user!;
     const { tmdbId, mediaType, title, body, score } = request.body;
 
     try {
+        const localUser = await resolveLocalUser(request);
+
         const created = await prisma.review.create({
-            data: { tmdbId, mediaType, title, body, score, userId: user.sub },
+            data: { tmdbId, mediaType, title, body, score, userId: localUser.id },
         });
         response.status(201).json(created);
     } catch (error: unknown) {
@@ -61,17 +55,17 @@ export const listReviews = async (request: Request, response: Response) => {
 };
 
 export const updateReview = async (request: Request, response: Response) => {
-    const user = request.user!;
     const id = request.parsedParams!.id!;
     const { title, body, score } = request.body;
 
-    const existing = await prisma.review.findUnique({ where: { id } });
-    if (!existing) {
+    const existingReview = await prisma.review.findUnique({ where: { id } });
+    if (!existingReview) {
         response.status(404).json({ error: 'Review not found' });
         return;
     }
+    const existingUser = await resolveLocalUser(request);
     // Only the author may edit — admins do not get an override on edits, only on deletes.
-    if (existing.userId !== user.sub) {
+    if (existingUser.id !== existingReview.userId) {
         response.status(403).json({ error: 'Only the author may edit this review' });
         return;
     }
@@ -87,12 +81,14 @@ export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;
 
-    const existing = await prisma.review.findUnique({ where: { id } });
-    if (!existing) {
+    const existingReview = await prisma.review.findUnique({ where: { id } });
+    if (!existingReview) {
         response.status(404).json({ error: 'Review not found' });
         return;
     }
-    if (existing.userId !== user.sub && user.role !== 'Admin') {
+    // can't be null because userId is a required field of a review. Any existing review will have an associated userId
+    const existingUser = await resolveLocalUser(request);
+    if (existingUser.id !== existingReview.userId && user.role !== 'Admin') {
         response.status(403).json({ error: 'Forbidden' });
         return;
     }

@@ -1,35 +1,17 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
-
-// Reused everywhere a user is returned. Excludes `password` so we never leak
-// the credential hash. Search this file for the literal `password` to verify.
-const userSafeSelect = {
-    id: true,
-    email: true,
-    role: true,
-    createdAt: true,
-} as const;
+import { resolveLocalUser } from '../auth/resolveLocalUser';
 
 export const getMe = async (request: Request, response: Response) => {
-    const user = request.user!;
-    const found = await prisma.user.findUnique({
-        where: { id: user.sub },
-        select: userSafeSelect,
-    });
-    if (!found) {
-        response.status(404).json({ error: 'User not found' });
-        return;
-    }
+    const found = await resolveLocalUser(request);
+
     response.json(found);
 };
 
 export const getUserById = async (request: Request, response: Response) => {
     const id = request.parsedParams!.id!;
-    const found = await prisma.user.findUnique({
-        where: { id },
-        select: userSafeSelect,
-    });
-    if (!found) {
+    const found = await resolveLocalUser(request);
+    if (found.id !== id) {
         response.status(404).json({ error: 'User not found' });
         return;
     }
@@ -40,27 +22,25 @@ export const updateUser = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;
 
-    if (id !== user.sub && user.role !== 'Admin') {
-        response.status(403).json({ error: 'Forbidden' });
-        return;
-    }
-
-    // Build the update object explicitly. Never spread req.body into prisma.update.
-    // password and unknown fields are silently ignored.
-    // TODO Sprint 3: password change will be handled by Auth-Squared.
-    const updateData: { email?: string; role?: 'User' | 'Admin' } = {};
-    if (request.body.email !== undefined) {
-        updateData.email = request.body.email;
-    }
-    if (request.body.role !== undefined && user.role === 'Admin') {
-        updateData.role = request.body.role;
-    }
-
     try {
+        const existing = await resolveLocalUser(request);
+
+        if (existing.id !== id && user.role !== 'Admin') {
+            response.status(403).json({ error: 'Forbidden' });
+            return;
+        }
+
+        const updateData: { email?: string; role?: 'User' | 'Admin' } = {};
+        if (request.body.email !== undefined) {
+            updateData.email = request.body.email;
+        }
+        if (request.body.role !== undefined && user.role === 'Admin') {
+            updateData.role = request.body.role;
+        }
+
         const updated = await prisma.user.update({
             where: { id },
             data: updateData,
-            select: userSafeSelect,
         });
         response.json(updated);
     } catch (error: unknown) {
@@ -81,12 +61,14 @@ export const deleteUser = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;
 
-    if (id !== user.sub && user.role !== 'Admin') {
-        response.status(403).json({ error: 'Forbidden' });
-        return;
-    }
-
     try {
+        const existing = await resolveLocalUser(request);
+
+        if (existing.id !== id && user.role !== 'Admin') {
+            response.status(403).json({ error: 'Forbidden' });
+            return;
+        }
+
         await prisma.user.delete({ where: { id } });
         response.status(204).end();
     } catch (error: unknown) {

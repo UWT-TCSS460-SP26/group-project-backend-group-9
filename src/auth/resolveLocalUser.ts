@@ -16,11 +16,11 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
 
     // Fast path: the local row itself caches the auth-squared enrichment, so
     // userinfo is called at most once per sub — not per request.
-    const existing = await prisma.user.findUnique({ where: { id: sub } });
+    const existing = await prisma.user.findUnique({ where: { subjectId: sub } });
     if (existing) {
         if (claimEmail && claimEmail !== existing.email) {
             return prisma.user.update({
-                where: { id: sub },
+                where: { subjectId: sub },
                 data: { email: claimEmail },
             });
         }
@@ -31,14 +31,15 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
     const info = token ? await fetchUserInfo(token) : undefined;
 
     const email = info?.email ?? claimEmail ?? `${sub}@placeholder.local`;
-    const username = info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub}`);
+    const username =
+        info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub.slice(0, 12)}`);
 
     // upsert (not create) to tolerate a race between two concurrent first-time
     // requests for the same sub.
     return prisma.user.upsert({
-        where: { id: sub },
+        where: { subjectId: sub },
         update: {},
-        create: { id: sub, username, email },
+        create: { subjectId: sub, username, email },
     });
 };
 
