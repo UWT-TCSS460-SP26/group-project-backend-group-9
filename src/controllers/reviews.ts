@@ -1,8 +1,16 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
+import { Role } from '../middleware/requireAuth';
 
 export const createReview = async (request: Request, response: Response) => {
-    const user = request.user!;
+    const user: {
+        role: Role;
+        iat?: number;
+        exp?: number;
+        aud?: string | string[];
+        iss?: string;
+        sub: number;
+    } = request.user!;
     const { tmdbId, mediaType, title, body, score } = request.body;
 
     try {
@@ -84,7 +92,7 @@ export const deleteReview = async (request: Request, response: Response) => {
         response.status(404).json({ error: 'Review not found' });
         return;
     }
-    if (existing.userId !== user.sub && user.role !== 'ADMIN') {
+    if (existing.userId !== user.sub && user.role !== 'Admin') {
         response.status(403).json({ error: 'Forbidden' });
         return;
     }

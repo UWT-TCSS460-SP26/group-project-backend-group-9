@@ -6,7 +6,7 @@ export const ROLE_HIERARCHY = ['User', 'Moderator', 'Admin', 'SuperAdmin', 'Owne
 export type Role = (typeof ROLE_HIERARCHY)[number];
 
 export interface AuthenticatedUser {
-    sub: string;
+    sub: number;
     email?: string;
     role: Role;
     iat?: number;
@@ -49,7 +49,7 @@ const verifyJwt = expressjwt({
 
 const attachUser = (request: JwtRequest, _response: Response, next: NextFunction): void => {
     if (request.auth) {
-        (request as Request).user = request.auth as AuthenticatedUser;
+        (request as Request).user = request.auth as unknown as AuthenticatedUser;
     }
     next();
 };
@@ -71,8 +71,8 @@ const handleAuthError: ErrorRequestHandler = (error, _request, response, next) =
  */
 export const requireAuth: Array<RequestHandler | ErrorRequestHandler> = [
     verifyJwt,
-attachUser,
-handleAuthError,
+    attachUser,
+    handleAuthError,
 ];
 
 /**

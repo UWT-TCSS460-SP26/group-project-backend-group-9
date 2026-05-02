@@ -13,7 +13,7 @@ model User {
   id        Int       @id @default(autoincrement())
   username  String    @unique
   email     String    @unique
-  role      Role      @default(USER)
+  role      Role      @default(User)
   createdAt DateTime  @default(now())
   reviews   Review[]
   

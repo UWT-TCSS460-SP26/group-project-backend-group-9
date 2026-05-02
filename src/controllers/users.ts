@@ -40,7 +40,7 @@ export const updateUser = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;
 
-    if (id !== user.sub && user.role !== 'ADMIN') {
+    if (id !== user.sub && user.role !== 'Admin') {
         response.status(403).json({ error: 'Forbidden' });
         return;
     }
@@ -48,11 +48,11 @@ export const updateUser = async (request: Request, response: Response) => {
     // Build the update object explicitly. Never spread req.body into prisma.update.
     // password and unknown fields are silently ignored.
     // TODO Sprint 3: password change will be handled by Auth-Squared.
-    const updateData: { email?: string; role?: 'USER' | 'ADMIN' } = {};
+    const updateData: { email?: string; role?: 'User' | 'Admin' } = {};
     if (request.body.email !== undefined) {
         updateData.email = request.body.email;
     }
-    if (request.body.role !== undefined && user.role === 'ADMIN') {
+    if (request.body.role !== undefined && user.role === 'Admin') {
         updateData.role = request.body.role;
     }
 
@@ -81,7 +81,7 @@ export const deleteUser = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;
 
-    if (id !== user.sub && user.role !== 'ADMIN') {
+    if (id !== user.sub && user.role !== 'Admin') {
         response.status(403).json({ error: 'Forbidden' });
         return;
     }

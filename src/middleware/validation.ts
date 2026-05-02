@@ -295,7 +295,7 @@ export const validateUpdateReviewBody = (
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const USER_ROLES = ['USER', 'ADMIN'] as const;
+const USER_ROLES = ['User', 'Admin'] as const;
 type UserRole = (typeof USER_ROLES)[number];
 
 const isUserRole = (value: unknown): value is UserRole =>

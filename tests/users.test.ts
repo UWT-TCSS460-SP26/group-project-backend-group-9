@@ -27,13 +27,21 @@ jest.mock('../src/lib/prisma', () => ({
 
 import request from 'supertest';
 
-const TEST_SECRET = 'test-secret-for-jwt-signing-only';
-process.env.JWT_SECRET = TEST_SECRET;
-
 import { app } from '../src/app';
 
-const tokenFor = (sub: number, role: 'USER' | 'ADMIN' = 'USER', email = 'u@example.com') =>
-    jwt.sign({ sub, email, role }, TEST_SECRET, { expiresIn: '1h' });
+const authHeader = (
+    sub: number,
+    role: 'User' | 'Admin' = 'User',
+    email: string = 'u@example.com'
+) => ({
+    role: role,
+    iat: Math.floor(new Date().getTime()),
+    exp: Math.floor(new Date().getTime()) + 360,
+    aud: process.env.API_AUDIENCE,
+    iss: process.env.AUTH_ISSUER,
+    sub: sub,
+    email: email,
+});
 
 const sampleUser = {
     id: 1,
@@ -59,7 +67,7 @@ describe('GET /users/me', () => {
 
         const res = await request(app)
             .get('/users/me')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(1)));
 
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(1);
@@ -76,7 +84,7 @@ describe('GET /users/me', () => {
 
         const res = await request(app)
             .get('/users/me')
-            .set('Authorization', `Bearer ${tokenFor(999)}`);
+            .set('x-test-user', JSON.stringify(authHeader(999)));
 
         expect(res.status).toBe(404);
     });
@@ -91,7 +99,7 @@ describe('GET /users/:id', () => {
     it('returns 400 for non-integer id', async () => {
         const res = await request(app)
             .get('/users/abc')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(1)));
         expect(res.status).toBe(400);
         expect(mockUser.findUnique).not.toHaveBeenCalled();
     });
@@ -101,7 +109,7 @@ describe('GET /users/:id', () => {
 
         const res = await request(app)
             .get('/users/999')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(1)));
 
         expect(res.status).toBe(404);
     });
@@ -111,7 +119,7 @@ describe('GET /users/:id', () => {
 
         const res = await request(app)
             .get('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(1)));
 
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(1);
@@ -128,7 +136,7 @@ describe('PUT /users/:id', () => {
     it('returns 403 when a non-owner non-admin tries to update', async () => {
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'USER')}`)
+            .set('x-test-user', JSON.stringify(authHeader(99, 'User')))
             .send({ email: 'new@example.com' });
 
         expect(res.status).toBe(403);
@@ -141,7 +149,7 @@ describe('PUT /users/:id', () => {
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader(1)))
             .send({ email: 'new@example.com' });
 
         expect(res.status).toBe(200);
@@ -160,7 +168,7 @@ describe('PUT /users/:id', () => {
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'ADMIN')}`)
+            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')))
             .send({ email: 'new@example.com' });
 
         expect(res.status).toBe(200);
@@ -168,30 +176,30 @@ describe('PUT /users/:id', () => {
     });
 
     it("allows an admin to change another user's role", async () => {
-        const updated = { ...sampleUser, role: 'ADMIN' };
+        const updated = { ...sampleUser, role: 'Admin' };
         mockUser.update.mockResolvedValue(updated);
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'ADMIN')}`)
-            .send({ role: 'ADMIN' });
+            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')))
+            .send({ role: 'Admin' });
 
         expect(res.status).toBe(200);
-        expect(res.body.role).toBe('ADMIN');
+        expect(res.body.role).toBe('Admin');
         expect(mockUser.update).toHaveBeenCalledWith({
             where: { id: 1 },
-            data: { role: 'ADMIN' },
+            data: { role: 'Admin' },
             select: { id: true, email: true, role: true, createdAt: true },
         });
     });
 
-    it('silently strips role when a USER tries to escalate themselves', async () => {
+    it('silently strips role when a User tries to escalate themselves', async () => {
         mockUser.update.mockResolvedValue(sampleUser);
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1, 'USER')}`)
-            .send({ email: 'new@example.com', role: 'ADMIN' });
+            .set('x-test-user', JSON.stringify(authHeader(1, 'User')))
+            .send({ email: 'new@example.com', role: 'Admin' });
 
         expect(res.status).toBe(200);
         // role must NOT be in the data passed to Prisma
@@ -207,7 +215,7 @@ describe('PUT /users/:id', () => {
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader(1)))
             .send({ email: 'new@example.com', password: 'hunter2' });
 
         expect(res.status).toBe(200);
@@ -218,7 +226,7 @@ describe('PUT /users/:id', () => {
     it('returns 400 for invalid email format', async () => {
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader(1)))
             .send({ email: 'not-an-email' });
 
         expect(res.status).toBe(400);
@@ -228,7 +236,7 @@ describe('PUT /users/:id', () => {
     it('returns 400 for invalid role value (sent by admin)', async () => {
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'ADMIN')}`)
+            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')))
             .send({ role: 'GOD' });
 
         expect(res.status).toBe(400);
@@ -241,7 +249,7 @@ describe('PUT /users/:id', () => {
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader(1)))
             .send({ email: 'new@example.com' });
 
         expect(res.status).toBe(404);
@@ -253,7 +261,7 @@ describe('PUT /users/:id', () => {
 
         const res = await request(app)
             .put('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader(1)))
             .send({ email: 'taken@example.com' });
 
         expect(res.status).toBe(409);
@@ -269,7 +277,7 @@ describe('DELETE /users/:id', () => {
     it('returns 403 when a non-owner non-admin tries to delete', async () => {
         const res = await request(app)
             .delete('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'USER')}`);
+            .set('x-test-user', JSON.stringify(authHeader(99, 'User')));
 
         expect(res.status).toBe(403);
         expect(mockUser.delete).not.toHaveBeenCalled();
@@ -280,7 +288,7 @@ describe('DELETE /users/:id', () => {
 
         const res = await request(app)
             .delete('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(1)));
 
         expect(res.status).toBe(204);
         expect(mockUser.delete).toHaveBeenCalledWith({ where: { id: 1 } });
@@ -291,7 +299,7 @@ describe('DELETE /users/:id', () => {
 
         const res = await request(app)
             .delete('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(99, 'ADMIN')}`);
+            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')));
 
         expect(res.status).toBe(204);
     });
@@ -302,7 +310,7 @@ describe('DELETE /users/:id', () => {
 
         const res = await request(app)
             .delete('/users/1')
-            .set('Authorization', `Bearer ${tokenFor(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader(99, 'Admin')));
 
         expect(res.status).toBe(404);
     });

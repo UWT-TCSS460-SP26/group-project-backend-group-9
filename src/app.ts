@@ -5,7 +5,6 @@ import YAML from 'yaml';
 import { apiReference } from '@scalar/express-api-reference';
 import { logger } from './middleware/logger';
 import { routes } from './routes';
-import devAuthRouter from './routes/devAuth';
 
 const app = express();
 
@@ -21,9 +20,6 @@ app.get('/openapi.json', (_request: Request, response: Response) => {
     response.json(spec);
 });
 app.use('/api-docs', apiReference({ spec: { url: '/openapi.json' } }));
-
-// Authentication
-app.use('/auth', devAuthRouter);
 
 // Routes
 app.use(routes);
