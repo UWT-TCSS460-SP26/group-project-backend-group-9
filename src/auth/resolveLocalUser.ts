@@ -16,11 +16,11 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
 
     // Fast path: the local row itself caches the auth-squared enrichment, so
     // userinfo is called at most once per sub — not per request.
-    const existing = await prisma.user.findUnique({ where: { subjectId: sub } });
+    const existing = await prisma.user.findUnique({ where: { id: sub } });
     if (existing) {
         if (claimEmail && claimEmail !== existing.email) {
             return prisma.user.update({
-                where: { subjectId: sub },
+                where: { id: sub },
                 data: { email: claimEmail },
             });
         }
@@ -31,16 +31,14 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
     const info = token ? await fetchUserInfo(token) : undefined;
 
     const email = info?.email ?? claimEmail ?? `${sub}@placeholder.local`;
-    const { firstName, lastName } = splitName(info?.name);
-    const username =
-        info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub.slice(0, 12)}`);
+    const username = info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub}`);
 
     // upsert (not create) to tolerate a race between two concurrent first-time
     // requests for the same sub.
     return prisma.user.upsert({
-        where: { subjectId: sub },
+        where: { id: sub },
         update: {},
-        create: { subjectId: sub, username, email, firstName, lastName },
+        create: { id: sub, username, email },
     });
 };
 
@@ -69,11 +67,4 @@ const extractBearerToken = (request: Request): string | undefined => {
     if (typeof header !== 'string') return undefined;
     const [scheme, token] = header.split(' ');
     return scheme?.toLowerCase() === 'bearer' && token ? token : undefined;
-};
-
-const splitName = (name: string | undefined): { firstName: string; lastName: string } => {
-    const trimmed = name?.trim();
-    if (!trimmed) return { firstName: 'Unknown', lastName: 'User' };
-    const [first, ...rest] = trimmed.split(/\s+/);
-    return { firstName: first, lastName: rest.length ? rest.join(' ') : 'User' };
 };

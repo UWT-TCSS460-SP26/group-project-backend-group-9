@@ -327,7 +327,7 @@ export const validateUpdateUserBody = (
     }
 
     if (role !== undefined && !isUserRole(role)) {
-        response.status(400).json({ error: 'role must be USER or ADMIN' });
+        response.status(400).json({ error: 'role must be User or Admin' });
         return;
     }
 
