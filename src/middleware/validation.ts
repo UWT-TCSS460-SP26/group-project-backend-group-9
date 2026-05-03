@@ -334,6 +334,137 @@ export const validateUpdateUserBody = (
     next();
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Issues validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ISSUE_SEVERITIES = ['Minor', 'Major', 'Critical'] as const;
+const ISSUE_STATUSES = ['Open', 'InProgress', 'Resolved', 'Closed'] as const;
+
+/**
+ * Validates that a required body field is present and is a non-empty string after trim.
+ * Optionally enforces a maximum length.
+ */
+export const requireBodyString = (name: string, maxLength?: number) => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const value = request.body?.[name];
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            response
+                .status(400)
+                .json({ error: `${name} is required and must be a non-empty string` });
+            return;
+        }
+        if (maxLength && value.length > maxLength) {
+            response
+                .status(400)
+                .json({ error: `${name} must be ${maxLength} characters or fewer` });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Validates that an optional body field, if present, is a string matching basic email format.
+ */
+export const validateOptionalBodyEmail = (name: string) => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const value = request.body?.[name];
+        if (value === undefined || value === null) {
+            next();
+            return;
+        }
+        if (typeof value !== 'string' || !EMAIL_PATTERN.test(value)) {
+            response.status(400).json({ error: `${name} is not a valid email address` });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Validates that an optional body field, if present, matches one of the allowed enum values.
+ */
+export const validateOptionalBodyEnum = (name: string, options: readonly string[]) => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const value = request.body?.[name];
+        if (value === undefined || value === null) {
+            next();
+            return;
+        }
+        if (!options.includes(value)) {
+            response.status(400).json({ error: `${name} must be one of ${options.join(', ')}` });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Rejects the request if any disallowed field appears in the body.
+ * Used to prevent clients from setting fields like status on creation.
+ */
+export const rejectBodyFields = (disallowed: string[]) => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const present = disallowed.filter((field) => request.body?.[field] !== undefined);
+        if (present.length > 0) {
+            response.status(400).json({ error: `Field(s) not allowed: ${present.join(', ')}` });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Wraps up validation for POST /issues body.
+ * Title and description required, optional reporterEmail and severity validated if present,
+ * status and other internal fields rejected if sent.
+ */
+export const validateCreateIssue = () => {
+    return [
+        requireBodyString('title', 255),
+        requireBodyString('description', 5000),
+        validateOptionalBodyEmail('reporterEmail'),
+        validateOptionalBodyEnum('severity', ISSUE_SEVERITIES),
+        rejectBodyFields(['status', 'id', 'createdAt', 'updatedAt']),
+    ];
+};
+
+/**
+ * Validates :id path param is an integer. Used by GET /issues/:id and PUT /issues/:id.
+ */
+export const validateIdParam = () => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const raw = request.params.id;
+        if (typeof raw !== 'string' || !INTEGER_PATTERN.test(raw)) {
+            response.status(400).json({ error: 'id must be an integer' });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Validates PUT /issues/:id body: only `status` is allowed and must be a valid IssueStatus.
+ */
+export const validateUpdateIssueStatus = () => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const body = request.body ?? {};
+        const keys = Object.keys(body);
+        if (keys.length !== 1 || keys[0] !== 'status') {
+            response.status(400).json({ error: 'Only the status field is allowed' });
+            return;
+        }
+        if (!ISSUE_STATUSES.includes(body.status)) {
+            response
+                .status(400)
+                .json({ error: `status must be one of ${ISSUE_STATUSES.join(', ')}` });
+            return;
+        }
+        next();
+    };
+};
+
 /** Validates GET /reviews query string: page, limit, tmdbId, mediaType. */
 export const validateListReviewsQuery = [
     parseIntQueryParam('page', { min: 1 }, 'page must be a positive integer'),
