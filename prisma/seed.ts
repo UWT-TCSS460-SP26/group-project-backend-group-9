@@ -6,8 +6,4 @@ const connectionString = process.env.DATABASE_URL!;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-async function main() {
-    prisma.user.createOne({
-        data: { username: 'admin', email: 'admin@development.local', role: 'Admin' },
-    });
-}
+async function main() {}

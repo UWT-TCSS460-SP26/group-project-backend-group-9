@@ -130,7 +130,6 @@ Finished with any sidenotes.
 
 Meeting concluded.
 
-
 ## Meeting 6 — Tuesday, April 28 2026
 
 **Meeting Scribe:** Raiden H
