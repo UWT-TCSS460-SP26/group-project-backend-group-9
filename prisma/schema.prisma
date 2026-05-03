@@ -11,9 +11,10 @@ datasource db {
 
 model User {
   id        Int       @id @default(autoincrement())
+  subjectId String    @unique
   username  String    @unique
   email     String    @unique
-  role      Role      @default(USER)
+  role      Role      @default(User)
   createdAt DateTime  @default(now())
   reviews   Review[]
   
@@ -38,8 +39,8 @@ model Review {
 }
 
 enum Role {
-  USER
-  ADMIN
+  User
+  Admin
 }
 
 enum MediaType {

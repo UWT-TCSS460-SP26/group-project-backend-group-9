@@ -295,7 +295,7 @@ export const validateUpdateReviewBody = (
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const USER_ROLES = ['USER', 'ADMIN'] as const;
+const USER_ROLES = ['User', 'Admin'] as const;
 type UserRole = (typeof USER_ROLES)[number];
 
 const isUserRole = (value: unknown): value is UserRole =>
@@ -327,7 +327,7 @@ export const validateUpdateUserBody = (
     }
 
     if (role !== undefined && !isUserRole(role)) {
-        response.status(400).json({ error: 'role must be USER or ADMIN' });
+        response.status(400).json({ error: 'role must be User or Admin' });
         return;
     }
 

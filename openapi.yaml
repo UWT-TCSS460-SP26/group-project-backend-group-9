@@ -23,8 +23,6 @@ tags:
       description: TV show endpoints
     - name: Reviews
       description: User-authored reviews of movies and shows
-    - name: Auth
-      description: Development-only authentication endpoints
 
 paths:
     /status:
@@ -361,40 +359,6 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
-
-    /auth/dev-login:
-        post:
-            tags: [Auth]
-            summary: Mint a development JWT
-            description: |
-                Development-only endpoint that issues a signed JWT for the supplied email.
-                Used by tests and local clients to obtain a token without a real signup flow.
-                The role defaults to USER.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DevLoginRequest'
-            responses:
-                '200':
-                    description: Token issued
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DevLoginResponse'
-                '400':
-                    description: Missing or invalid email
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-                '500':
-                    description: Server is missing JWT_SECRET configuration
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
 
     /reviews:
         get:
@@ -1002,26 +966,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Review'
 
-        DevLoginRequest:
-            type: object
-            required: [username, email]
-            properties:
-                username:
-                    type: string
-                    example: tester
-                email:
-                    type: string
-                    format: email
-                    example: test@example.com
-
-        DevLoginResponse:
-            type: object
-            properties:
-                token:
-                    type: string
-                    description: Signed JWT
-                    example: abcABC.123QWeR...'
-
         User:
             type: object
             properties:
@@ -1034,8 +978,8 @@ components:
                     example: alice@example.com
                 role:
                     type: string
-                    enum: [USER, ADMIN]
-                    example: USER
+                    enum: [User, Admin]
+                    example: User
                 createdAt:
                     type: string
                     format: date-time

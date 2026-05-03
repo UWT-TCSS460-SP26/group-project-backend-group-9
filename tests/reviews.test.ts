@@ -22,17 +22,24 @@ jest.mock('../src/lib/prisma', () => ({
     prisma: { review: mockReview, user: mockUser },
 }));
 
-import jwt from 'jsonwebtoken';
 import request from 'supertest';
-
-const TEST_SECRET = 'test-secret-for-jwt-signing-only';
-process.env.JWT_SECRET = TEST_SECRET;
 
 // Import after env + mocks are in place
 import { app } from '../src/app';
 
-const userToken = (sub: number, role: 'USER' | 'ADMIN' = 'USER', email = 'u@example.com') =>
-    jwt.sign({ sub, email, role }, TEST_SECRET, { expiresIn: '1h' });
+const authHeader = (
+    sub: string,
+    role: 'User' | 'Admin' = 'User',
+    email: string = 'alice@example.com'
+) => ({
+    role: role,
+    iat: Math.floor(new Date().getTime()),
+    exp: Math.floor(new Date().getTime()) + 360,
+    aud: process.env.API_AUDIENCE,
+    iss: process.env.AUTH_ISSUER,
+    sub: sub,
+    email: email,
+});
 
 const sampleReview = {
     id: 42,
@@ -65,7 +72,7 @@ describe('POST /reviews', () => {
 
         const res = await request(app)
             .post('/reviews')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(validBody);
 
         expect(res.status).toBe(201);
@@ -76,35 +83,10 @@ describe('POST /reviews', () => {
         });
     });
 
-    it('returns 401 when Authorization header is missing', async () => {
+    it('returns 401 when user header is missing', async () => {
         const res = await request(app).post('/reviews').send(validBody);
         expect(res.status).toBe(401);
         expect(mockReview.create).not.toHaveBeenCalled();
-    });
-
-    it('returns 401 when bearer token is malformed', async () => {
-        const res = await request(app)
-            .post('/reviews')
-            .set('Authorization', 'Bearer not-a-real-jwt')
-            .send(validBody);
-        expect(res.status).toBe(401);
-    });
-
-    it('returns 401 when Authorization scheme is not Bearer', async () => {
-        const res = await request(app)
-            .post('/reviews')
-            .set('Authorization', `Token ${userToken(1)}`)
-            .send(validBody);
-        expect(res.status).toBe(401);
-    });
-
-    it('returns 401 when token is signed with the wrong secret', async () => {
-        const badToken = jwt.sign({ sub: 1, email: 'x', role: 'USER' }, 'other-secret');
-        const res = await request(app)
-            .post('/reviews')
-            .set('Authorization', `Bearer ${badToken}`)
-            .send(validBody);
-        expect(res.status).toBe(401);
     });
 
     it.each([
@@ -125,7 +107,7 @@ describe('POST /reviews', () => {
     ])('returns 400 for %s', async (_label, payload) => {
         const res = await request(app)
             .post('/reviews')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(payload);
         expect(res.status).toBe(400);
         expect(mockReview.create).not.toHaveBeenCalled();
@@ -137,7 +119,7 @@ describe('POST /reviews', () => {
 
         const res = await request(app)
             .post('/reviews')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(validBody);
 
         expect(res.status).toBe(409);
@@ -259,7 +241,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
 
         expect(res.status).toBe(200);
@@ -275,12 +257,18 @@ describe('PUT /reviews/:id', () => {
         expect(res.status).toBe(401);
     });
 
-    it('returns 403 when caller is not the author (even as ADMIN)', async () => {
+    it('returns 403 when caller is not the author (even as Admin)', async () => {
         mockReview.findUnique.mockResolvedValue(sampleReview); // userId: 1
 
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        // update with a different user (id=2)
         const res = await request(app)
             .put('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(99, 'ADMIN')}`)
+            .set('x-test-user', JSON.stringify(authHeader('99', 'Admin')))
             .send(updateBody);
 
         expect(res.status).toBe(403);
@@ -292,7 +280,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
 
         expect(res.status).toBe(404);
@@ -303,7 +291,7 @@ describe('PUT /reviews/:id', () => {
 
         const res = await request(app)
             .put('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send({ ...updateBody, score: 11 });
 
         expect(res.status).toBe(400);
@@ -313,7 +301,7 @@ describe('PUT /reviews/:id', () => {
     it('returns 400 for non-integer id', async () => {
         const res = await request(app)
             .put('/reviews/abc')
-            .set('Authorization', `Bearer ${userToken(1)}`)
+            .set('x-test-user', JSON.stringify(authHeader('1')))
             .send(updateBody);
         expect(res.status).toBe(400);
     });
@@ -326,19 +314,25 @@ describe('DELETE /reviews/:id', () => {
 
         const res = await request(app)
             .delete('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
         expect(res.status).toBe(204);
         expect(mockReview.delete).toHaveBeenCalledWith({ where: { id: 42 } });
     });
 
-    it('returns 204 when caller is an ADMIN deleting another user’s review', async () => {
+    it('returns 204 when caller is an Admin deleting another user’s review', async () => {
         mockReview.findUnique.mockResolvedValue(sampleReview); // userId: 1
         mockReview.delete.mockResolvedValue(sampleReview);
 
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        // delete with a different user (id=2)
         const res = await request(app)
             .delete('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(99, 'ADMIN')}`);
+            .set('x-test-user', JSON.stringify(authHeader('99', 'Admin')));
 
         expect(res.status).toBe(204);
     });
@@ -350,10 +344,15 @@ describe('DELETE /reviews/:id', () => {
 
     it('returns 403 when caller is neither author nor admin', async () => {
         mockReview.findUnique.mockResolvedValue(sampleReview);
+        // create the id=1 user
+        const _user = await request(app)
+            .get('/users/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
+        // delete with a different user (id=2)
         const res = await request(app)
             .delete('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(99, 'USER')}`);
+            .set('x-test-user', JSON.stringify(authHeader('99', 'User')));
 
         expect(res.status).toBe(403);
         expect(mockReview.delete).not.toHaveBeenCalled();
@@ -364,34 +363,8 @@ describe('DELETE /reviews/:id', () => {
 
         const res = await request(app)
             .delete('/reviews/42')
-            .set('Authorization', `Bearer ${userToken(1)}`);
+            .set('x-test-user', JSON.stringify(authHeader('1')));
 
         expect(res.status).toBe(404);
-    });
-});
-
-describe('POST /auth/dev-login', () => {
-    it('returns a signed JWT for a valid email', async () => {
-        mockUser.upsert.mockResolvedValue({
-            id: 7,
-            email: 'tester@example.com',
-            role: 'USER',
-        });
-
-        const res = await request(app)
-            .post('/auth/dev-login')
-            .send({ username: 'tester', email: 'tester@example.com' });
-
-        expect(res.status).toBe(200);
-        expect(typeof res.body.token).toBe('string');
-        const decoded = jwt.verify(res.body.token, TEST_SECRET) as jwt.JwtPayload;
-        expect(decoded.email).toBe('tester@example.com');
-        expect(decoded.role).toBe('USER');
-        expect(typeof decoded.sub).toBe('number');
-    });
-
-    it('returns 400 for missing email', async () => {
-        const res = await request(app).post('/auth/dev-login').send({});
-        expect(res.status).toBe(400);
     });
 });

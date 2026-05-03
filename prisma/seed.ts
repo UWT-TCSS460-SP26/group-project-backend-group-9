@@ -8,6 +8,6 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
     prisma.user.createOne({
-        data: { username: 'admin', email: 'admin@development.local', role: 'ADMIN' },
+        data: { username: 'admin', email: 'admin@development.local', role: 'Admin' },
     });
 }
