@@ -47,3 +47,30 @@ enum MediaType {
   MOVIE
   TV
 }
+
+enum IssueStatus {
+  Open
+  InProgress
+  Resolved
+  Closed
+}
+
+enum Severity {
+  Minor
+  Major
+  Critical
+}
+
+model Issue {
+  id            Int         @id @default(autoincrement())
+  title         String
+  description   String
+  reporterEmail String?
+  severity      Severity    @default(Minor)
+  status        IssueStatus @default(Open)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([status])
+  @@map("issues")
+}
