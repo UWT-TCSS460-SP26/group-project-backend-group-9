@@ -339,6 +339,7 @@ export const validateUpdateUserBody = (
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ISSUE_SEVERITIES = ['Minor', 'Major', 'Critical'] as const;
+const ISSUE_STATUSES = ['Open', 'InProgress', 'Resolved', 'Closed'] as const;
 
 /**
  * Validates that a required body field is present and is a non-empty string after trim.
@@ -427,6 +428,41 @@ export const validateCreateIssue = () => {
         validateOptionalBodyEnum('severity', ISSUE_SEVERITIES),
         rejectBodyFields(['status', 'id', 'createdAt', 'updatedAt']),
     ];
+};
+
+/**
+ * Validates :id path param is an integer. Used by GET /issues/:id and PUT /issues/:id.
+ */
+export const validateIdParam = () => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const raw = request.params.id;
+        if (typeof raw !== 'string' || !INTEGER_PATTERN.test(raw)) {
+            response.status(400).json({ error: 'id must be an integer' });
+            return;
+        }
+        next();
+    };
+};
+
+/**
+ * Validates PUT /issues/:id body: only `status` is allowed and must be a valid IssueStatus.
+ */
+export const validateUpdateIssueStatus = () => {
+    return (request: Request, response: Response, next: NextFunction): void => {
+        const body = request.body ?? {};
+        const keys = Object.keys(body);
+        if (keys.length !== 1 || keys[0] !== 'status') {
+            response.status(400).json({ error: 'Only the status field is allowed' });
+            return;
+        }
+        if (!ISSUE_STATUSES.includes(body.status)) {
+            response
+                .status(400)
+                .json({ error: `status must be one of ${ISSUE_STATUSES.join(', ')}` });
+            return;
+        }
+        next();
+    };
 };
 
 /** Validates GET /reviews query string: page, limit, tmdbId, mediaType. */
