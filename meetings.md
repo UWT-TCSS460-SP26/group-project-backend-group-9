@@ -110,8 +110,47 @@ The team went over their current progress on the self-assigned tasks.
 No one indicated issues with their progress.
 Everyone self-assigned tasks as needed for the final integrations to complete the sprint.
 
-### Agenda Item 2: Wrap-up
+## Meeting 5 — Monday, April 27 2026
 
-Talked about when we estimate we would be done with our tasks and had PRs reviewed soon after.
+**Meeting Scribe:** Raiden H
+
+---
+
+### Agenda Item 1: Project Management
+
+The team reviewed current project management structure.
+
+### Agenda Item 2: Task division
+
+Reviewed broken up tasks for the week, selected what to work on.
+
+### Agenda Item 3: Wrap-up
+
+Finished with any sidenotes.
+
+Meeting concluded.
+
+
+## Meeting 6 — Tuesday, April 28 2026
+
+**Meeting Scribe:** Raiden H
+
+---
+
+### Agenda Item 1: Standup
+
+The team updated each other on current progress, any blockers or other issues.
+
+Meeting concluded.
+
+## Meeting 7 — Friday, May 1 2026
+
+**Meeting Scribe:** Raiden H
+
+---
+
+### Agenda Item 1: Standup
+
+The team updated each other on current progress, any blockers or other issues.
 
 Meeting concluded.
