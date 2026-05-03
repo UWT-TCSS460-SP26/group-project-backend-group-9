@@ -348,11 +348,15 @@ export const requireBodyString = (name: string, maxLength?: number) => {
     return (request: Request, response: Response, next: NextFunction): void => {
         const value = request.body?.[name];
         if (typeof value !== 'string' || value.trim().length === 0) {
-            response.status(400).json({ error: `${name} is required and must be a non-empty string` });
+            response
+                .status(400)
+                .json({ error: `${name} is required and must be a non-empty string` });
             return;
         }
         if (maxLength && value.length > maxLength) {
-            response.status(400).json({ error: `${name} must be ${maxLength} characters or fewer` });
+            response
+                .status(400)
+                .json({ error: `${name} must be ${maxLength} characters or fewer` });
             return;
         }
         next();

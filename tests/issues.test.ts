@@ -102,10 +102,12 @@ describe('POST /issues', () => {
     });
 
     it('rejects title over 255 characters', async () => {
-        const response = await request(app).post('/issues').send({
-            title: 'a'.repeat(256),
-            description: 'Title is too long.',
-        });
+        const response = await request(app)
+            .post('/issues')
+            .send({
+                title: 'a'.repeat(256),
+                description: 'Title is too long.',
+            });
 
         expect(response.status).toBe(400);
     });
