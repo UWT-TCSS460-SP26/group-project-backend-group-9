@@ -22,7 +22,7 @@ import {
 const issueRoutes = Router();
 
 issueRoutes.post('/', validateCreateIssue(), createIssue);
-issueRoutes.get('/', getIssues);
+issueRoutes.get('/', requireAuth, getIssues);
 issueRoutes.get('/:id', validateIdParam(), getIssueById);
 issueRoutes.put(
     '/:id',
