@@ -221,7 +221,9 @@ describe('GET /issues', () => {
             reporterEmail: 'leak-test@example.com',
         });
 
-        const response = await request(app).get('/issues');
+        const response = await request(app)
+            .get('/issues')
+            .set('x-test-user', JSON.stringify(authHeader('test-user', 'User')));
         expect(response.status).toBe(200);
         for (const issue of response.body) {
             expect(issue).not.toHaveProperty('reporterEmail');
