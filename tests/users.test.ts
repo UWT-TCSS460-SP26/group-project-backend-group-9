@@ -21,10 +21,6 @@ jest.mock('../src/prisma', () => ({
     prisma: { review: mockReview, user: mockUser },
 }));
 
-jest.mock('../src/lib/prisma', () => ({
-    prisma: { review: mockReview, user: mockUser },
-}));
-
 import request from 'supertest';
 
 import { app } from '../src/app';

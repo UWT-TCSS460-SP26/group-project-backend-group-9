@@ -411,7 +411,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
         post:
             tags: [Reviews]
             summary: Create a review
@@ -439,19 +439,19 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '401':
                     description: Missing or invalid bearer token
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '409':
                     description: User has already reviewed this title
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ConflictErrorResponse'
 
     /reviews/{id}:
         parameters:
@@ -476,13 +476,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '404':
                     description: Review not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
         put:
             tags: [Reviews]
             summary: Update a review
@@ -509,25 +509,25 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '401':
                     description: Missing or invalid bearer token
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '403':
                     description: Caller is not the review author
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
                 '404':
                     description: Review not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
         delete:
             tags: [Reviews]
             summary: Delete a review
@@ -544,19 +544,19 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '403':
                     description: Caller is neither the author nor an admin
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
                 '404':
                     description: Review not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
 
     /users/me:
         get:
@@ -577,13 +577,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '404':
                     description: Authenticated user no longer exists
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
 
     /users/{id}:
         parameters:
@@ -610,19 +610,19 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '401':
                     description: Missing or invalid bearer token
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '404':
                     description: User not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
         put:
             tags: [Users]
             summary: Update a user
@@ -651,31 +651,31 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '401':
                     description: Missing or invalid bearer token
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '403':
                     description: Caller is neither the owner nor an admin
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
                 '404':
                     description: User not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
                 '409':
                     description: Email already in use by another user
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ConflictErrorResponse'
         delete:
             tags: [Users]
             summary: Delete a user
@@ -692,25 +692,25 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '401':
                     description: Missing or invalid bearer token
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '403':
                     description: Caller is neither the owner nor an admin
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
                 '404':
                     description: User not found
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                $ref: '#/components/schemas/MissingErrorResponse'
 
 # ── Schemas ───────────────────────────────────────────────────
 
@@ -995,12 +995,36 @@ components:
                     example: newemail@example.com
                 role:
                     type: string
-                    enum: [USER, ADMIN]
+                    enum: [User, Admin]
                     description: Only admins may change roles. If a non-admin sends this field, it is silently ignored.
 
-        ErrorResponse:
+        MissingErrorResponse:
             type: object
             properties:
                 error:
                     type: string
-                    example: Review not found
+                    example: Not found
+        ValidationErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: Invalid input
+        UnauthorizedErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: Unauthorized
+        UnauthenticatedErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: Unauthenticated
+        ConflictErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: Conflicting resource already exists

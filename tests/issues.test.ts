@@ -39,10 +39,6 @@ jest.mock('../src/prisma', () => ({
     prisma: { issue: mockIssue },
 }));
 
-jest.mock('../src/lib/prisma', () => ({
-    prisma: { issue: mockIssue },
-}));
-
 import request from 'supertest';
 import { app } from '../src/app';
 

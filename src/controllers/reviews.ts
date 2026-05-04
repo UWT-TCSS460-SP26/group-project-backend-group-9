@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
+import { hasRoleAtLeast } from '../middleware/requireAuth';
 
 export const createReview = async (request: Request, response: Response) => {
     const { tmdbId, mediaType, title, body, score } = request.body;
@@ -88,7 +89,7 @@ export const deleteReview = async (request: Request, response: Response) => {
     }
     // can't be null because userId is a required field of a review. Any existing review will have an associated userId
     const existingUser = await resolveLocalUser(request);
-    if (existingUser.id !== existingReview.userId && user.role !== 'Admin') {
+    if (existingUser.id !== existingReview.userId && !hasRoleAtLeast(user.role, 'Admin')) {
         response.status(403).json({ error: 'Forbidden' });
         return;
     }

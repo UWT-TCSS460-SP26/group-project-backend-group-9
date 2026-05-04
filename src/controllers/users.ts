@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
+import { hasRoleAtLeast } from '../middleware/requireAuth';
 
 export const getMe = async (request: Request, response: Response) => {
     const found = await resolveLocalUser(request);
@@ -10,8 +11,10 @@ export const getMe = async (request: Request, response: Response) => {
 
 export const getUserById = async (request: Request, response: Response) => {
     const id = request.parsedParams!.id!;
-    const found = await resolveLocalUser(request);
-    if (found.id !== id) {
+    const found = await prisma.user.findUnique({
+        where: { id },
+    });
+    if (!found) {
         response.status(404).json({ error: 'User not found' });
         return;
     }
@@ -25,7 +28,7 @@ export const updateUser = async (request: Request, response: Response) => {
     try {
         const existing = await resolveLocalUser(request);
 
-        if (existing.id !== id && user.role !== 'Admin') {
+        if (existing.id !== id && !hasRoleAtLeast(user.role, 'Admin')) {
             response.status(403).json({ error: 'Forbidden' });
             return;
         }
@@ -34,7 +37,7 @@ export const updateUser = async (request: Request, response: Response) => {
         if (request.body.email !== undefined) {
             updateData.email = request.body.email;
         }
-        if (request.body.role !== undefined && user.role === 'Admin') {
+        if (request.body.role !== undefined && hasRoleAtLeast(user.role, 'Admin')) {
             updateData.role = request.body.role;
         }
 
@@ -64,7 +67,7 @@ export const deleteUser = async (request: Request, response: Response) => {
     try {
         const existing = await resolveLocalUser(request);
 
-        if (existing.id !== id && user.role !== 'Admin') {
+        if (existing.id !== id && !hasRoleAtLeast(user.role, 'Admin')) {
             response.status(403).json({ error: 'Forbidden' });
             return;
         }
