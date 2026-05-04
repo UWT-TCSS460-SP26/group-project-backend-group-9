@@ -207,7 +207,9 @@ describe('POST /issues', () => {
 
 describe('GET /issues', () => {
     it('returns 200 with array of issues', async () => {
-        const response = await request(app).get('/issues');
+        const response = await request(app)
+            .get('/issues');
+            .set('x-test-user', JSON.stringify(authHeader('test-user', 'User')));
         expect(response.status).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
     });
