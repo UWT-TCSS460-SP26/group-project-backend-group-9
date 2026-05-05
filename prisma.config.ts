@@ -12,7 +12,10 @@ export default defineConfig({
         async adapter() {
             const { Pool } = await import('pg');
             const { PrismaPg } = await import('@prisma/adapter-pg');
-            const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+            const pool = new Pool({
+                connectionString: process.env.DATABASE_URL,
+                ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+            });
             return new PrismaPg(pool);
         },
     },
