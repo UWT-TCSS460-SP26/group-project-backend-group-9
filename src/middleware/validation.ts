@@ -129,7 +129,6 @@ export type UserUpdate = z.infer<typeof UserUpdateSchema>;
 export type IssueCreate = z.infer<typeof IssueCreateSchema>;
 export type IssueUpdate = z.infer<typeof IssueUpdateSchema>;
 
-<<<<<<< HEAD
 // Miscellaneous validation middleware
 
 /**
