@@ -22,12 +22,12 @@ describe('Prisma singleton (src/prisma.ts)', () => {
     let prismaModule: typeof import('../src/prisma');
 
     beforeAll(async () => {
-        process.env.DATABASE_URL_SUPABASE = 'postgresql://test:test@localhost:5432/testdb';
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/testdb';
         // Import after mocks are in place so the module executes against fakes
         prismaModule = await import('../src/prisma');
     });
 
-    it('creates a Pool using DATABASE_URL_SUPABASE from the environment', () => {
+    it('creates a Pool using DATABASE_URL from the environment', () => {
         expect(Pool).toHaveBeenCalledWith({
             connectionString: 'postgresql://test:test@localhost:5432/testdb',
             ssl: false,
