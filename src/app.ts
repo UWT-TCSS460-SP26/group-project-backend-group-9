@@ -7,9 +7,16 @@ import { logger } from './middleware/logger';
 import { routes } from './routes';
 
 const app = express();
+const corsOrigin = process.env.CORS_ALLOWED_ORIGINS ?? '*';
+const origin = corsOrigin.includes(',') ? corsOrigin.split(',') : corsOrigin;
 
 // Application-level middleware
-app.use(cors());
+app.use(
+    cors({
+        origin,
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    })
+);
 app.use(express.json());
 app.use(logger);
 
