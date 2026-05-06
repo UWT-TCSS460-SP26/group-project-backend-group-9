@@ -30,6 +30,7 @@ describe('Prisma singleton (src/prisma.ts)', () => {
     it('creates a Pool using DATABASE_URL from the environment', () => {
         expect(Pool).toHaveBeenCalledWith({
             connectionString: 'postgresql://test:test@localhost:5432/testdb',
+            ssl: false,
         });
     });
 
