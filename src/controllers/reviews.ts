@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
 import { hasRoleAtLeast } from '../middleware/requireAuth';
+import { ReviewList, ReviewCreate, ReviewUpdate } from '../middleware/validation';
 
 export const createReview = async (request: Request, response: Response) => {
-    const { tmdbId, mediaType, title, body, score } = request.body;
+    const { tmdbId, mediaType, title, body, score } = request.validated!.body as ReviewCreate;
 
     try {
         const localUser = await resolveLocalUser(request);
@@ -23,7 +24,7 @@ export const createReview = async (request: Request, response: Response) => {
 };
 
 export const getReviewById = async (request: Request, response: Response) => {
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
 
     const review = await prisma.review.findUnique({ where: { id } });
     if (!review) {
@@ -34,13 +35,11 @@ export const getReviewById = async (request: Request, response: Response) => {
 };
 
 export const listReviews = async (request: Request, response: Response) => {
-    const parsed = request.parsedQuery ?? {};
-    const page = parsed.page ?? 1;
-    const limit = parsed.limit ?? 20;
+    const { page, limit, tmdbId, mediaType } = request.validated!.query as ReviewList;
 
     const where: { tmdbId?: number; mediaType?: 'MOVIE' | 'TV' } = {};
-    if (parsed.tmdbId !== undefined) where.tmdbId = parsed.tmdbId;
-    if (parsed.mediaType !== undefined) where.mediaType = parsed.mediaType;
+    if (tmdbId !== undefined) where.tmdbId = tmdbId;
+    if (mediaType !== undefined) where.mediaType = mediaType;
 
     const [results, total] = await Promise.all([
         prisma.review.findMany({
@@ -56,8 +55,8 @@ export const listReviews = async (request: Request, response: Response) => {
 };
 
 export const updateReview = async (request: Request, response: Response) => {
-    const id = request.parsedParams!.id!;
-    const { title, body, score } = request.body;
+    const { id } = request.validated!.params! as { id: number };
+    const { title, body, score } = request.validated!.body as ReviewUpdate;
 
     const existingReview = await prisma.review.findUnique({ where: { id } });
     if (!existingReview) {
@@ -80,7 +79,7 @@ export const updateReview = async (request: Request, response: Response) => {
 
 export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
 
     const existingReview = await prisma.review.findUnique({ where: { id } });
     if (!existingReview) {

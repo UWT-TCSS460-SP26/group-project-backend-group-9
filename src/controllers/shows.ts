@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ShowSearch } from '../middleware/validation';
 
 // TMDB base URLs for API requests and poster images
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -6,7 +7,7 @@ const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
 
 // Fetches TV show details from TMDB and returns a transformed response
 export const getShowDetails = async (request: Request, response: Response) => {
-    const { id } = request.params;
+    const { id } = request.validated!.params! as { id: number };
 
     try {
         const tmdbResponse = await fetch(`${BASE_URL}/tv/${id}`, {
@@ -50,14 +51,8 @@ export const getShowDetails = async (request: Request, response: Response) => {
 };
 
 export const getShows = async (request: Request, response: Response) => {
-    const page: number = Number(request.query.page) || 0;
-    const name: string = request.query.name as string;
-    const description: string = request.query.description as string;
-    const lang: string = (request.query.lang || 'en') as string;
-    const after: string = request.query.after as string;
-    const before: string = request.query.before as string;
-    const sort: string = (request.query.sort || 'popularity') as string;
-    const order: string = (request.query.order || 'desc') as string;
+    const { page, name, description, lang, after, before, sort, order } = request.validated!
+        .query as ShowSearch;
 
     const sortKey: Record<string, string> = {
         name: 'name',
@@ -69,9 +64,8 @@ export const getShows = async (request: Request, response: Response) => {
     try {
         const query: string = name
             ? `${BASE_URL}/search/tv?query=${encodeURIComponent(name)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
-            : `${BASE_URL}/discover/tv?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+            : `${BASE_URL}/discover/tv?page=${encodeURIComponent(page + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
         const result = await fetch(query, {
-            // TMDB Requires the key in a custom header
             headers: {
                 Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
             },

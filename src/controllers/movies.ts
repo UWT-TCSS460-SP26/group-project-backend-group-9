@@ -1,17 +1,12 @@
 import { Request, Response } from 'express';
+import { MovieSearch } from '../middleware/validation';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
 
 export const getMovies = async (request: Request, response: Response) => {
-    const page: number = Number(request.query.page) || 0;
-    const title: string = request.query.title as string;
-    const description: string = request.query.description as string;
-    const lang: string = (request.query.lang || 'en') as string;
-    const after: string = request.query.after as string;
-    const before: string = request.query.before as string;
-    const sort: string = (request.query.sort || 'popularity') as string;
-    const order: string = (request.query.order || 'desc') as string;
+    const { page, title, description, lang, after, before, sort, order } = request.validated!
+        .query as MovieSearch;
 
     const sortKey: Record<string, string> = {
         title: 'title',
@@ -23,10 +18,9 @@ export const getMovies = async (request: Request, response: Response) => {
     try {
         const query: string = title
             ? `${BASE_URL}/search/movie?query=${encodeURIComponent(title)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
-            : `${BASE_URL}/discover/movie?page=${encodeURIComponent(Number(page) + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+            : `${BASE_URL}/discover/movie?page=${encodeURIComponent(page + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
 
         const result = await fetch(query, {
-            // TMDB Requires the key in a custom header
             headers: {
                 Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,
             },
@@ -83,7 +77,7 @@ export const getMovies = async (request: Request, response: Response) => {
 };
 
 export const getMovieDetails = async (request: Request, response: Response) => {
-    const { id } = request.params;
+    const { id } = request.validated!.params! as { id: number };
 
     try {
         const result = await fetch(`${BASE_URL}/movie/${encodeURIComponent(String(id))}`, {

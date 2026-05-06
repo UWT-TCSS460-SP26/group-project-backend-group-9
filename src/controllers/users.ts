@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
 import { hasRoleAtLeast } from '../middleware/requireAuth';
+import { UserUpdate } from '../middleware/validation';
 
 export const getMe = async (request: Request, response: Response) => {
     const found = await resolveLocalUser(request);
@@ -10,7 +11,7 @@ export const getMe = async (request: Request, response: Response) => {
 };
 
 export const getUserById = async (request: Request, response: Response) => {
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
     const found = await prisma.user.findUnique({
         where: { id },
     });
@@ -23,7 +24,8 @@ export const getUserById = async (request: Request, response: Response) => {
 
 export const updateUser = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
+    const { email, role } = request.validated!.body as UserUpdate;
 
     try {
         const existing = await resolveLocalUser(request);
@@ -34,11 +36,11 @@ export const updateUser = async (request: Request, response: Response) => {
         }
 
         const updateData: { email?: string; role?: 'User' | 'Admin' } = {};
-        if (request.body.email !== undefined) {
-            updateData.email = request.body.email;
+        if (email) {
+            updateData.email = email;
         }
-        if (request.body.role !== undefined && hasRoleAtLeast(user.role, 'Admin')) {
-            updateData.role = request.body.role;
+        if (role && hasRoleAtLeast(user.role, 'Admin')) {
+            updateData.role = role;
         }
 
         const updated = await prisma.user.update({
@@ -51,18 +53,18 @@ export const updateUser = async (request: Request, response: Response) => {
         if (code === 'P2025') {
             response.status(404).json({ error: 'User not found' });
             return;
-        }
-        if (code === 'P2002') {
+        } else if (code === 'P2002') {
             response.status(409).json({ error: 'Email already in use' });
             return;
+        } else {
+            response.status(500).json({ error: 'Failed to update user' });
         }
-        response.status(500).json({ error: 'Failed to update user' });
     }
 };
 
 export const deleteUser = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
 
     try {
         const existing = await resolveLocalUser(request);
