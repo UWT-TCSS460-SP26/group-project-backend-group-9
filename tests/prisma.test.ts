@@ -29,7 +29,8 @@ describe('Prisma singleton (src/prisma.ts)', () => {
 
     it('creates a Pool using DATABASE_URL_SUPABASE from the environment', () => {
         expect(Pool).toHaveBeenCalledWith({
-            connectionString: 'postgresql://test:test@localhost:5432/testdb?sslmode=disable',
+            connectionString: 'postgresql://test:test@localhost:5432/testdb',
+            ssl: false,
         });
     });
 
