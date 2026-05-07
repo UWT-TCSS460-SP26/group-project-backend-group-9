@@ -37,6 +37,17 @@ const authHeader = (
     email: email,
 });
 
+// sampleUser is what Prisma returns when include: { user: true } is used.
+// The controller's formatReview() strips this down to author: { id, username }.
+const sampleUser = {
+    id: 1,
+    subjectId: 'auth0|abc123',
+    username: 'alice',
+    email: 'alice@example.com',
+    role: 'User',
+    createdAt: new Date('2026-04-01T00:00:00.000Z'),
+};
+
 const sampleReview = {
     id: 42,
     tmdbId: 961323,
@@ -47,6 +58,7 @@ const sampleReview = {
     userId: 1,
     createdAt: new Date('2026-04-25T18:30:00.000Z'),
     updatedAt: new Date('2026-04-25T18:30:00.000Z'),
+    user: sampleUser,
 };
 
 beforeEach(() => {
@@ -73,9 +85,10 @@ describe('POST /reviews', () => {
 
         expect(res.status).toBe(201);
         expect(res.body.id).toBe(42);
-        expect(res.body.userId).toBe(1);
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
         expect(mockReview.create).toHaveBeenCalledWith({
             data: { ...validBody, userId: 1 },
+            include: { user: true },
         });
     });
 
@@ -129,7 +142,11 @@ describe('GET /reviews/:id', () => {
         const res = await request(app).get('/reviews/42');
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(42);
-        expect(mockReview.findUnique).toHaveBeenCalledWith({ where: { id: 42 } });
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
+        expect(mockReview.findUnique).toHaveBeenCalledWith({
+            where: { id: 42 },
+            include: { user: true },
+        });
     });
 
     it('returns 404 when not found', async () => {
@@ -142,6 +159,21 @@ describe('GET /reviews/:id', () => {
         const res = await request(app).get('/reviews/abc');
         expect(res.status).toBe(400);
         expect(mockReview.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('falls back to email when username is missing', async () => {
+        // Gap 2: formatReview uses `username ?? email`. This test proves the fallback
+        // fires correctly so the sprint's documented behavior is verified in code.
+        const noUsernameSample = {
+            ...sampleReview,
+            user: { ...sampleUser, username: null },
+        };
+        mockReview.findUnique.mockResolvedValue(noUsernameSample);
+
+        const res = await request(app).get('/reviews/42');
+
+        expect(res.status).toBe(200);
+        expect(res.body.author.username).toBe('alice@example.com');
     });
 });
 
@@ -162,7 +194,21 @@ describe('GET /reviews', () => {
             orderBy: { createdAt: 'desc' },
             skip: 0,
             take: 20,
+            include: { user: true },
         });
+    });
+
+    it('includes author on each result and does not leak raw user data', async () => {
+        // Gap 1 + 3: every item in `results` must have author.id and author.username,
+        // and the raw `user` join must not appear in the response.
+        mockReview.findMany.mockResolvedValue([sampleReview]);
+        mockReview.count.mockResolvedValue(1);
+
+        const res = await request(app).get('/reviews');
+        const item = res.body.results[0];
+
+        expect(item.author).toEqual({ id: 1, username: 'alice' });
+        expect(item.user).toBeUndefined();
     });
 
     it('honors page and limit query params', async () => {
@@ -242,9 +288,11 @@ describe('PUT /reviews/:id', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.title).toBe('Updated');
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
         expect(mockReview.update).toHaveBeenCalledWith({
             where: { id: 42 },
             data: updateBody,
+            include: { user: true },
         });
     });
 

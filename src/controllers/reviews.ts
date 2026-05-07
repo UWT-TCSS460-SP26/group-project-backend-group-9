@@ -2,6 +2,25 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
 import { hasRoleAtLeast } from '../middleware/requireAuth';
+import type { ReviewModel, UserModel } from '../generated/prisma/models';
+
+// Shapes a Prisma review+user row into the public API response format.
+// We always expose `author` instead of the raw `user` join so consumers
+// get a stable, minimal identity object and never see email or role.
+// `username` is required by the DB schema, so the email fallback is a safety net only.
+function formatReview(review: ReviewModel & { user: UserModel }) {
+    const { user, ...rest } = review;
+    return {
+        ...rest,
+        author: {
+            id: user.id,
+            username: user.username ?? user.email,
+        },
+    };
+}
+
+// Passed to every Prisma query that returns a review so the user join is always included.
+const reviewInclude = { user: true } as const;
 
 export const createReview = async (request: Request, response: Response) => {
     const { tmdbId, mediaType, title, body, score } = request.body;
@@ -11,8 +30,9 @@ export const createReview = async (request: Request, response: Response) => {
 
         const created = await prisma.review.create({
             data: { tmdbId, mediaType, title, body, score, userId: localUser.id },
+            include: reviewInclude,
         });
-        response.status(201).json(created);
+        response.status(201).json(formatReview(created));
     } catch (error: unknown) {
         if ((error as { code?: string })?.code === 'P2002') {
             response.status(409).json({ error: 'You have already reviewed this title' });
@@ -25,12 +45,12 @@ export const createReview = async (request: Request, response: Response) => {
 export const getReviewById = async (request: Request, response: Response) => {
     const id = request.parsedParams!.id!;
 
-    const review = await prisma.review.findUnique({ where: { id } });
+    const review = await prisma.review.findUnique({ where: { id }, include: reviewInclude });
     if (!review) {
         response.status(404).json({ error: 'Review not found' });
         return;
     }
-    response.json(review);
+    response.json(formatReview(review));
 };
 
 export const listReviews = async (request: Request, response: Response) => {
@@ -48,11 +68,12 @@ export const listReviews = async (request: Request, response: Response) => {
             orderBy: { createdAt: 'desc' },
             skip: (page - 1) * limit,
             take: limit,
+            include: reviewInclude,
         }),
         prisma.review.count({ where }),
     ]);
 
-    response.json({ page, limit, total, results });
+    response.json({ page, limit, total, results: results.map(formatReview) });
 };
 
 export const updateReview = async (request: Request, response: Response) => {
@@ -74,8 +95,9 @@ export const updateReview = async (request: Request, response: Response) => {
     const updated = await prisma.review.update({
         where: { id },
         data: { title, body, score },
+        include: reviewInclude,
     });
-    response.json(updated);
+    response.json(formatReview(updated));
 };
 
 export const deleteReview = async (request: Request, response: Response) => {
