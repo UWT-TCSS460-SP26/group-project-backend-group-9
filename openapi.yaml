@@ -868,7 +868,7 @@ paths:
                                     error:
                                         type: string
                                         example: Failed to create review
-    
+
     /issues/{id}:
         parameters:
             - name: id
