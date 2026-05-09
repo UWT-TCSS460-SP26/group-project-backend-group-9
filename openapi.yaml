@@ -41,7 +41,6 @@ paths:
                                     status:
                                         type: string
                                         example: 'Alive'
-
     /movies/{id}:
         get:
             tags: [Movies]
@@ -62,6 +61,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MovieResponse'
+                '400':
+                    description: Invalid movie ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '404':
                     description: Movie not found
                     content:
@@ -103,9 +108,9 @@ paths:
                   required: false
                   schema:
                       type: integer
-                      default: 0
-                      minimum: 0
-                  description: Page number from the results
+                      default: 1
+                      minimum: 1
+                  description: Page number from the results. Clamps to last page
                 - name: lang
                   in: query
                   required: false
@@ -150,7 +155,7 @@ paths:
                       type: string
                       default: popularity
                       enum: [title, popularity, date, rating]
-                  description: Field to sort on. If title parameter is included, uses the default value.
+                  description: Field to sort on. If title parameter is included, uses the default value
                 - name: order
                   in: query
                   required: false
@@ -158,7 +163,7 @@ paths:
                       type: string
                       default: desc
                       enum: [asc, desc]
-                  description: Sorting order. If title parameter is included, uses the default value.
+                  description: Sorting order
             responses:
                 '200':
                     description: One page of returned movies, with 0 - 20 movies per page.
@@ -171,11 +176,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Page number must be less than total pages
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '500':
                     description: Server error
                     content:
@@ -220,11 +221,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Invalid show ID
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '404':
                     description: Show not found
                     content:
@@ -244,7 +241,7 @@ paths:
                                 properties:
                                     error:
                                         type: string
-                                        example: Failed to fetch show data
+                                        example: Network error
                 '502':
                     description: Bad gateway
                     content:
@@ -254,7 +251,7 @@ paths:
                                 properties:
                                     error:
                                         type: string
-                                        example: Network error
+                                        example: Failed to fetch show data
     /shows/search:
         get:
             tags: [Shows]
@@ -266,9 +263,9 @@ paths:
                   required: false
                   schema:
                       type: integer
-                      default: 0
-                      minimum: 0
-                  description: Page number from the results
+                      default: 1
+                      minimum: 1
+                  description: Page number from the results. Clamps to last page
                 - name: lang
                   in: query
                   required: false
@@ -334,11 +331,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Page number must be less than total pages
+                                $ref: '#/components/schemas/ValidationErrorResponse'
                 '500':
                     description: Server error
                     content:
@@ -359,7 +352,6 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
-
     /reviews:
         get:
             tags: [Reviews]
@@ -397,6 +389,7 @@ paths:
                   required: false
                   schema:
                       type: string
+                      default: MOVIE
                       enum: [MOVIE, TV]
                   description: Filter to reviews of a specific media type
             responses:
@@ -412,6 +405,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ValidationErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
         post:
             tags: [Reviews]
             summary: Create a review
@@ -435,7 +438,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Review'
                 '400':
-                    description: Validation failed
+                    description: Invalid input
                     content:
                         application/json:
                             schema:
@@ -452,7 +455,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ConflictErrorResponse'
-
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to create review
     /reviews/{id}:
         parameters:
             - name: id
@@ -483,6 +495,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
         put:
             tags: [Reviews]
             summary: Update a review
@@ -528,12 +550,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
         delete:
             tags: [Reviews]
             summary: Delete a review
             description: |
                 Deletes a review. The author may delete their own review; users with the
-                ADMIN role may delete any review.
+                Admin role may delete any review.
             security:
                 - bearerAuth: []
             responses:
@@ -557,12 +589,21 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
-
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
     /users/me:
         get:
             tags: [Users]
             summary: Get the current user
-            description: Returns the profile of the authenticated user. The password field is never returned.
+            description: Returns the profile of the authenticated user
             security:
                 - bearerAuth: []
             responses:
@@ -579,12 +620,21 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthenticatedErrorResponse'
                 '404':
-                    description: Authenticated user no longer exists
+                    description: User not found
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
-
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
     /users/{id}:
         parameters:
             - name: id
@@ -623,14 +673,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
         put:
             tags: [Users]
             summary: Update a user
             description: |
                 Updates `email` and/or `role` on a user. The owner may update their own
-                email; only ADMIN may change a user's role. The password field cannot
-                be modified through this endpoint (Sprint 3 will add password change
-                via Auth-Squared). Unknown fields in the request body are silently ignored.
+                email; only Admin may change a user's role. Unknown fields in the request
+                body are silently ignored.
             security:
                 - bearerAuth: []
             requestBody:
@@ -676,12 +735,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ConflictErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
         delete:
             tags: [Users]
             summary: Delete a user
             description: |
                 Permanently removes the user and all associated reviews (cascade delete).
-                The owner may delete their own account; ADMIN may delete any account.
+                The owner may delete their own account; Admin may delete any account.
             security:
                 - bearerAuth: []
             responses:
@@ -711,6 +780,16 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to delete user
 
 # ── Schemas ───────────────────────────────────────────────────
 
@@ -759,7 +838,6 @@ components:
                             poster:
                                 type: string
                                 example: https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg
-
         MovieResponse:
             type: object
             properties:
@@ -789,7 +867,6 @@ components:
                 rating:
                     type: number
                     example: 7.9
-
         ShowsSearchResponse:
             type: object
             properties:
@@ -828,7 +905,6 @@ components:
                             poster:
                                 type: string
                                 example: https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg
-
         ShowResponse:
             type: object
             properties:
@@ -873,7 +949,6 @@ components:
                     items:
                         type: string
                     example: [Drama, Crime]
-
         Review:
             type: object
             properties:
@@ -909,7 +984,6 @@ components:
                     type: string
                     format: date-time
                     example: 2026-04-25T18:30:00.000Z
-
         CreateReviewRequest:
             type: object
             required: [tmdbId, mediaType, title, body, score]
@@ -933,7 +1007,6 @@ components:
                     minimum: 1
                     maximum: 10
                     example: 9
-
         UpdateReviewRequest:
             type: object
             required: [title, body, score]
@@ -948,7 +1021,6 @@ components:
                     type: integer
                     minimum: 1
                     maximum: 10
-
         ReviewListResponse:
             type: object
             properties:
@@ -965,7 +1037,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Review'
-
         User:
             type: object
             properties:
@@ -985,7 +1056,6 @@ components:
                     format: date-time
                     example: 2026-04-25T14:00:00.000Z
             required: [id, email, role, createdAt]
-
         UpdateUserRequest:
             type: object
             properties:
@@ -997,7 +1067,6 @@ components:
                     type: string
                     enum: [User, Admin]
                     description: Only admins may change roles. If a non-admin sends this field, it is silently ignored.
-
         MissingErrorResponse:
             type: object
             properties:
@@ -1009,7 +1078,18 @@ components:
             properties:
                 error:
                     type: string
-                    example: Invalid input
+                    example: Validation Failed
+                details:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            path:
+                                type: string
+                                example: id
+                            message:
+                                type: string
+                                example: 'Invalid input: expected number, recieved NaN'
         UnauthorizedErrorResponse:
             type: object
             properties:

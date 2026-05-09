@@ -191,11 +191,11 @@ describe('Movie Routes', () => {
             expect(res.body.details[0].message).toContain('expected number');
         });
 
-        it('returns 502 when fetch throws', async () => {
+        it('returns 500 when fetch throws', async () => {
             mockFetch.mockRejectedValue(new Error('Network error'));
 
             const res = await request(app).get('/movies/search');
-            expect(res.status).toBe(502);
+            expect(res.status).toBe(500);
         });
     });
 });

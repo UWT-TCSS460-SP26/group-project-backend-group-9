@@ -22,7 +22,7 @@ export const getShowDetails = async (request: Request, response: Response) => {
         }
 
         if (!tmdbResponse.ok) {
-            response.status(500).json({ error: 'Failed to fetch show data' });
+            response.status(502).json({ error: 'Failed to fetch show data' });
             return;
         }
 
@@ -46,7 +46,7 @@ export const getShowDetails = async (request: Request, response: Response) => {
             genres: genres.map((g) => g.name),
         });
     } catch (_error) {
-        response.status(502).json({ error: 'Network error' });
+        response.status(500).json({ error: 'Network error' });
     }
 };
 
@@ -63,8 +63,8 @@ export const getShows = async (request: Request, response: Response) => {
 
     try {
         const query: string = name
-            ? `${BASE_URL}/search/tv?query=${encodeURIComponent(name)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
-            : `${BASE_URL}/discover/tv?page=${encodeURIComponent(page + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+            ? `${BASE_URL}/search/tv?query=${encodeURIComponent(name)}${lang ? '&language=' + encodeURIComponent(lang) : ''}page=${encodeURIComponent(page)}`
+            : `${BASE_URL}/discover/tv?page=${encodeURIComponent(page)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&first_air_date.gte=' + encodeURIComponent(after) : ''}${before ? '&first_air_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
         const result = await fetch(query, {
             headers: {
                 Authorization: `Bearer ${process.env.MOVIE_READ_KEY}`,

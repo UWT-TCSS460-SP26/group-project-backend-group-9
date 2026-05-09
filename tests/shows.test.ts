@@ -87,11 +87,11 @@ describe('Show routes', () => {
             expect(response.body).toHaveProperty('error');
         });
 
-        it('returns 502 when fetch throws', async () => {
+        it('returns 500 when fetch throws', async () => {
             mockFetch.mockRejectedValue(new Error('Network error'));
 
             const response = await request(app).get('/shows/1396');
-            expect(response.status).toBe(502);
+            expect(response.status).toBe(500);
         });
     });
 

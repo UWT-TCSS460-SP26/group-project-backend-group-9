@@ -17,8 +17,8 @@ export const getMovies = async (request: Request, response: Response) => {
 
     try {
         const query: string = title
-            ? `${BASE_URL}/search/movie?query=${encodeURIComponent(title)}${lang ? '&language=' + encodeURIComponent(lang) : ''}`
-            : `${BASE_URL}/discover/movie?page=${encodeURIComponent(page + 1)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
+            ? `${BASE_URL}/search/movie?query=${encodeURIComponent(title)}${lang ? '&language=' + encodeURIComponent(lang) : ''}page=${encodeURIComponent(page)}`
+            : `${BASE_URL}/discover/movie?page=${encodeURIComponent(page)}&sort_by=${encodeURIComponent(sortKey[sort] + '.' + order)}${after ? '&primary_release_date.gte=' + encodeURIComponent(after) : ''}${before ? '&primary_release_date.lte=' + encodeURIComponent(before) : ''}${lang ? '&language=' + encodeURIComponent(lang) : ''}`;
 
         const result = await fetch(query, {
             headers: {
@@ -29,7 +29,7 @@ export const getMovies = async (request: Request, response: Response) => {
         const data = (await result.json()) as Record<string, unknown>;
 
         if (!result.ok) {
-            response.status(result.status).json({ error: data.message || 'API error' });
+            response.status(502).json({ error: data.message || 'API error' });
             return;
         }
 
@@ -72,7 +72,7 @@ export const getMovies = async (request: Request, response: Response) => {
 
         response.json(out);
     } catch (_error) {
-        response.status(502).json({ error: 'Network error' });
+        response.status(500).json({ error: 'Network error' });
     }
 };
 

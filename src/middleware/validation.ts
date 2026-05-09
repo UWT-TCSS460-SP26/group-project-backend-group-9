@@ -22,7 +22,7 @@ const IdParamSchema = z.object({
 });
 
 const MovieSearchSchema = z.object({
-    page: z.coerce.number().int().min(0).default(0),
+    page: z.coerce.number().int().positive().default(1),
     lang: z.string().trim().min(1).max(8).default('en'),
     title: z.string().trim().min(1).optional(),
     description: z.string().trim().min(1).optional(),
@@ -33,7 +33,7 @@ const MovieSearchSchema = z.object({
 });
 
 const ShowSearchSchema = z.object({
-    page: z.coerce.number().int().min(0).default(0),
+    page: z.coerce.number().int().positive().default(1),
     lang: z.string().trim().min(1).default('en'),
     name: z.string().trim().min(1).optional(),
     description: z.string().trim().min(1).optional(),
