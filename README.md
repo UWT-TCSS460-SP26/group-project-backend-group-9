@@ -18,6 +18,7 @@ Endpoints are documented in the [API docs](https://tcss460-token-playground.onre
 ## CORS
 
 CORS allow-list:
+
 - `http://localhost:3000`
 
 To have an origin added to the allow-list, submit an issue
@@ -32,4 +33,4 @@ https://tcss460-token-playground.onrender.com/report
 ## Quirks
 
 - When using the search endpoints, if filters are too specific there may
-be zero results on the first page, but some actual results on later pages.
+  be zero results on the first page, but some actual results on later pages.
