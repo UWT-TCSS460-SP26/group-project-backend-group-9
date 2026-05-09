@@ -23,6 +23,10 @@ tags:
       description: TV show endpoints
     - name: Reviews
       description: User-authored reviews of movies and shows
+    - name: Users
+      description: User endpoints
+    - name: Issues
+      description: Issue reporting endpoints
 
 paths:
     /status:
@@ -790,6 +794,175 @@ paths:
                                     error:
                                         type: string
                                         example: Failed to delete user
+    /issues:
+        get:
+            tags: [Issues]
+            summary: List issues
+            description: |
+                Returns a paginated list of reviews, newest first. Optionally filter by
+                `tmdbId` and `mediaType` to fetch all reviews for a specific title.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: List of reviews
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IssueListResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
+        post:
+            tags: [Issues]
+            summary: Create an issue
+            description: |
+                Creates an issue.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateIssueRequest'
+            responses:
+                '201':
+                    description: Review created
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Issue'
+                '400':
+                    description: Invalid input
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '409':
+                    description: User has already reviewed this title
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to create review
+    
+    /issues/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                  type: integer
+              description: Issue ID
+        get:
+            tags: [Issues]
+            summary: Get an issue by ID
+            responses:
+                '200':
+                    description: Issue found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Issue'
+                '400':
+                    description: Invalid issue ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '404':
+                    description: Issue not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
+        put:
+            tags: [Issues]
+            summary: Update an issue status
+            description: |
+                Changes the status of an existing issue. Must be an Admin to update.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateIssueRequest'
+            responses:
+                '200':
+                    description: Review updated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Issue'
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '403':
+                    description: Caller is not an Admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+                '404':
+                    description: Issue not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Internal server error
 
 # ── Schemas ───────────────────────────────────────────────────
 
@@ -1036,7 +1209,68 @@ components:
                 results:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Review'
+                        $ref: '#/components/schemas/Issue'
+        IssueListResponse:
+            type: array
+            items:
+                $ref: '#/components/schemas/Issue'
+        Issue:
+            type: object
+            properties:
+                title:
+                    type: string
+                    example: Your documentation is terrible!
+                description:
+                    type: string
+                    example: You should use our documentation instead, it's much better.
+                reporterEmail:
+                    type: string
+                    format: email
+                    minLength: 1
+                    example: user@example.com
+                severity:
+                    type: string
+                    enum: [Minor, Major, Critical]
+                    example: Minor
+                status:
+                    type: string
+                    enum: [Open, InProgress, Resolved, Closed]
+                    example: Open
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-05-08T23:52:04.221Z
+                updatedAt:
+                    type: string
+                    format: date-time
+                    example: 2026-05-08T23:52:04.221Z
+        CreateIssueRequest:
+            type: object
+            required: [title, description]
+            properties:
+                title:
+                    type: string
+                    example: Your documentation is terrible!
+                description:
+                    type: string
+                    example: You should use our documentation instead, it's much better.
+                reporterEmail:
+                    type: string
+                    format: email
+                    example: user@example.com
+                severity:
+                    type: string
+                    enum: [Minor, Major, Critical]
+                    default: Minor
+                    example: Minor
+        UpdateIssueRequest:
+            type: object
+            required: [status]
+            properties:
+                status:
+                    type: string
+                    enum: [Open, InProgress, Resolved, Closed]
+                    example: Open
         User:
             type: object
             properties:
