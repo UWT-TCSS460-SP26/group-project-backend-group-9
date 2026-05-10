@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/requireAuth';
-import { validateUserIdParam, validateUpdateUserBody } from '../../middleware/validation';
+import { validateNumericId, validateUserUpdateBody } from '../../middleware/validation';
 import { getMe, getUserById, updateUser, deleteUser } from '../../controllers/users';
 
 const userRoutes = Router();
@@ -18,8 +18,8 @@ const userRoutes = Router();
 // /me MUST come before /:id — otherwise Express matches "me" as the :id
 // value and validateUserIdParam returns 400.
 userRoutes.get('/me', requireAuth, getMe);
-userRoutes.get('/:id', requireAuth, validateUserIdParam, getUserById);
-userRoutes.put('/:id', requireAuth, validateUserIdParam, validateUpdateUserBody, updateUser);
-userRoutes.delete('/:id', requireAuth, validateUserIdParam, deleteUser);
+userRoutes.get('/:id', requireAuth, validateNumericId, getUserById);
+userRoutes.put('/:id', requireAuth, validateNumericId, validateUserUpdateBody, updateUser);
+userRoutes.delete('/:id', requireAuth, validateNumericId, deleteUser);
 
 export { userRoutes };

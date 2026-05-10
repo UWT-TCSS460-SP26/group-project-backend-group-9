@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { resolveLocalUser } from '../auth/resolveLocalUser';
 import { hasRoleAtLeast } from '../middleware/requireAuth';
+import { ReviewList, ReviewCreate, ReviewUpdate } from '../middleware/validation';
 
 export const createReview = async (request: Request, response: Response) => {
-    const { tmdbId, mediaType, title, body, score } = request.body;
+    const { tmdbId, mediaType, title, body, score } = request.validated!.body as ReviewCreate;
 
     try {
         const localUser = await resolveLocalUser(request);
@@ -23,77 +24,91 @@ export const createReview = async (request: Request, response: Response) => {
 };
 
 export const getReviewById = async (request: Request, response: Response) => {
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
 
-    const review = await prisma.review.findUnique({ where: { id } });
-    if (!review) {
-        response.status(404).json({ error: 'Review not found' });
-        return;
+    try {
+        const review = await prisma.review.findUnique({ where: { id } });
+        if (!review) {
+            response.status(404).json({ error: 'Review not found' });
+            return;
+        }
+        response.json(review);
+    } catch (_error) {
+        response.status(500).json({ error: 'Internal server error' });
     }
-    response.json(review);
 };
 
 export const listReviews = async (request: Request, response: Response) => {
-    const parsed = request.parsedQuery ?? {};
-    const page = parsed.page ?? 1;
-    const limit = parsed.limit ?? 20;
+    const { page, limit, tmdbId, mediaType } = request.validated!.query as ReviewList;
 
     const where: { tmdbId?: number; mediaType?: 'MOVIE' | 'TV' } = {};
-    if (parsed.tmdbId !== undefined) where.tmdbId = parsed.tmdbId;
-    if (parsed.mediaType !== undefined) where.mediaType = parsed.mediaType;
+    if (tmdbId !== undefined) where.tmdbId = tmdbId;
+    if (mediaType !== undefined) where.mediaType = mediaType;
 
-    const [results, total] = await Promise.all([
-        prisma.review.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            skip: (page - 1) * limit,
-            take: limit,
-        }),
-        prisma.review.count({ where }),
-    ]);
+    try {
+        const [results, total] = await Promise.all([
+            prisma.review.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.review.count({ where }),
+        ]);
 
-    response.json({ page, limit, total, results });
+        response.json({ page, limit, total, results });
+    } catch (_error: unknown) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
 };
 
 export const updateReview = async (request: Request, response: Response) => {
-    const id = request.parsedParams!.id!;
-    const { title, body, score } = request.body;
+    const { id } = request.validated!.params! as { id: number };
+    const { title, body, score } = request.validated!.body as ReviewUpdate;
 
-    const existingReview = await prisma.review.findUnique({ where: { id } });
-    if (!existingReview) {
-        response.status(404).json({ error: 'Review not found' });
-        return;
-    }
-    const existingUser = await resolveLocalUser(request);
-    // Only the author may edit — admins do not get an override on edits, only on deletes.
-    if (existingUser.id !== existingReview.userId) {
-        response.status(403).json({ error: 'Only the author may edit this review' });
-        return;
-    }
+    try {
+        const existingReview = await prisma.review.findUnique({ where: { id } });
+        if (!existingReview) {
+            response.status(404).json({ error: 'Review not found' });
+            return;
+        }
+        const existingUser = await resolveLocalUser(request);
+        // Only the author may edit — admins do not get an override on edits, only on deletes.
+        if (existingUser.id !== existingReview.userId) {
+            response.status(403).json({ error: 'Only the author may edit this review' });
+            return;
+        }
 
-    const updated = await prisma.review.update({
-        where: { id },
-        data: { title, body, score },
-    });
-    response.json(updated);
+        const updated = await prisma.review.update({
+            where: { id },
+            data: { title, body, score },
+        });
+        response.json(updated);
+    } catch (_error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
 };
 
 export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
-    const id = request.parsedParams!.id!;
+    const { id } = request.validated!.params! as { id: number };
 
-    const existingReview = await prisma.review.findUnique({ where: { id } });
-    if (!existingReview) {
-        response.status(404).json({ error: 'Review not found' });
-        return;
-    }
-    // can't be null because userId is a required field of a review. Any existing review will have an associated userId
-    const existingUser = await resolveLocalUser(request);
-    if (existingUser.id !== existingReview.userId && !hasRoleAtLeast(user.role, 'Admin')) {
-        response.status(403).json({ error: 'Forbidden' });
-        return;
-    }
+    try {
+        const existingReview = await prisma.review.findUnique({ where: { id } });
+        if (!existingReview) {
+            response.status(404).json({ error: 'Review not found' });
+            return;
+        }
+        // can't be null because userId is a required field of a review. Any existing review will have an associated userId
+        const existingUser = await resolveLocalUser(request);
+        if (existingUser.id !== existingReview.userId && !hasRoleAtLeast(user.role, 'Admin')) {
+            response.status(403).json({ error: 'Forbidden' });
+            return;
+        }
 
-    await prisma.review.delete({ where: { id } });
-    response.status(204).end();
+        await prisma.review.delete({ where: { id } });
+        response.status(204).end();
+    } catch (_error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
 };

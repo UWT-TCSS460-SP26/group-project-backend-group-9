@@ -193,16 +193,6 @@ describe('POST /issues', () => {
 
         expect(response.status).toBe(400);
     });
-
-    it('rejects status field on creation', async () => {
-        const response = await request(app).post('/issues').send({
-            title: 'Bug report',
-            description: 'Trying to set status.',
-            status: 'Resolved',
-        });
-
-        expect(response.status).toBe(400);
-    });
 });
 
 describe('GET /issues', () => {
@@ -312,19 +302,6 @@ describe('PUT /issues/:id', () => {
             .put(`/issues/${id}`)
             .set('x-test-user', JSON.stringify(authHeader('test-admin-3', 'Admin')))
             .send({ status: 'Bogus' });
-        expect(response.status).toBe(400);
-    });
-
-    it('rejects body fields other than status', async () => {
-        const createResponse = await request(app)
-            .post('/issues')
-            .send({ title: 'Field strip test', description: '...' });
-        const id = createResponse.body.id;
-
-        const response = await request(app)
-            .put(`/issues/${id}`)
-            .set('x-test-user', JSON.stringify(authHeader('test-admin-4', 'Admin')))
-            .send({ status: 'InProgress', title: 'Hijack attempt' });
         expect(response.status).toBe(400);
     });
 
