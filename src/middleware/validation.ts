@@ -82,7 +82,7 @@ const IssueUpdateSchema = z.object({
 
 const CommunityListSchema = z.object({
     page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().positive.max(50).default(20),
+    limit: z.coerce.number().int().positive().max(50).default(20),
     minReviews: z.coerce.number().int().min(0).default(0),
     sort: z.literal(['rating', 'reviews']),
 });

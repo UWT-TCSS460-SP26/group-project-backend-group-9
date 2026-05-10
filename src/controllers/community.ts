@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
+import { CommunityList } from '../middleware/validation';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -25,11 +26,7 @@ async function fetchTmdbMeta(tmdbId: number, mediaType: 'MOVIE' | 'TV') {
 }
 
 export const getCommunityFeed = async (request: Request, response: Response) => {
-    const parsed = request.parsedQuery ?? {};
-    const page = parsed.page ?? 1;
-    const limit = parsed.limit ?? 20;
-    const minReviews = parsed.minReviews ?? 2;
-    const sort = (request.query.sort ?? 'rating') as 'rating' | 'reviews';
+    const { page, limit, minReviews, sort } = request.validated!.query as CommunityList;
 
     const having = { id: { _count: { gte: minReviews } } };
     const orderBy =
