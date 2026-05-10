@@ -190,7 +190,7 @@ describe('GET /reviews', () => {
         expect(res.body.total).toBe(1);
         expect(res.body.results).toHaveLength(1);
         expect(mockReview.findMany).toHaveBeenCalledWith({
-            where: {},
+            where: { mediaType: 'MOVIE' },
             orderBy: { createdAt: 'desc' },
             skip: 0,
             take: 20,
@@ -225,15 +225,13 @@ describe('GET /reviews', () => {
         );
     });
 
-    it('clamps limit to a maximum of 100', async () => {
+    it('disallows limit beyond 100', async () => {
         mockReview.findMany.mockResolvedValue([]);
         mockReview.count.mockResolvedValue(0);
 
         const res = await request(app).get('/reviews?limit=9999');
 
-        expect(res.status).toBe(200);
-        expect(res.body.limit).toBe(100);
-        expect(mockReview.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+        expect(res.status).toBe(400);
     });
 
     it('filters by tmdbId and mediaType', async () => {

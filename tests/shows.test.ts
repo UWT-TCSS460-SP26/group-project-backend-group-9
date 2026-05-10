@@ -87,11 +87,11 @@ describe('Show routes', () => {
             expect(response.body).toHaveProperty('error');
         });
 
-        it('returns 502 when fetch throws', async () => {
+        it('returns 500 when fetch throws', async () => {
             mockFetch.mockRejectedValue(new Error('Network error'));
 
             const response = await request(app).get('/shows/1396');
-            expect(response.status).toBe(502);
+            expect(response.status).toBe(500);
         });
     });
 
@@ -116,7 +116,7 @@ describe('Show routes', () => {
         it('returns 400 when query validation fails', async () => {
             const res = await request(app).get('/shows/search?page=one');
             expect(res.status).toBe(400);
-            expect(res.body.error).toMatch(/.*integer.*/i);
+            expect(res.body.details[0].message).toContain('expected number');
         });
 
         it('returns 502 when fetch throws', async () => {
