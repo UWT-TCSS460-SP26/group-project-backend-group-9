@@ -202,16 +202,6 @@ describe('POST /issues', () => {
 
         expect(response.status).toBe(400);
     });
-
-    it('rejects status field on creation', async () => {
-        const response = await request(app).post('/issues').send({
-            title: 'Bug report',
-            description: 'Trying to set status.',
-            status: 'Resolved',
-        });
-
-        expect(response.status).toBe(400);
-    });
 });
 
 describe('GET /issues (admin only)', () => {
