@@ -5,6 +5,7 @@ import { showsRoutes } from './shows';
 import { reviewRoutes } from './reviews';
 import { userRoutes } from './users';
 import { issueRoutes } from './issues';
+import { communityRoutes } from './community';
 
 const routes = Router();
 
@@ -14,6 +15,7 @@ routes.use('/shows', showsRoutes);
 routes.use('/reviews', reviewRoutes);
 routes.use('/users', userRoutes);
 routes.use('/issues', issueRoutes);
+routes.use('/community', communityRoutes);
 
 export { routes };
 

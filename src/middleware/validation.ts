@@ -10,6 +10,7 @@ declare global {
                 limit?: number;
                 tmdbId?: number;
                 mediaType?: 'MOVIE' | 'TV';
+                minReviews?: number;
             };
         }
     }
@@ -464,6 +465,31 @@ export const validateUpdateIssueStatus = () => {
         next();
     };
 };
+
+const COMMUNITY_SORT_VALUES = ['rating', 'reviews'] as const;
+
+/** Validates GET /community query string: page, limit, minReviews, sort. */
+export const validateCommunityFeedQuery = [
+    parseIntQueryParam('page', { min: 1 }, 'page must be a positive integer'),
+    parseIntQueryParam(
+        'limit',
+        { min: 1, clampMax: 50 },
+        'limit must be a positive integer between 1 and 50'
+    ),
+    parseIntQueryParam('minReviews', { min: 1 }, 'minReviews must be a positive integer'),
+    (request: Request, response: Response, next: NextFunction): void => {
+        const raw = request.query.sort;
+        if (raw === undefined) {
+            next();
+            return;
+        }
+        if (!COMMUNITY_SORT_VALUES.includes(raw as (typeof COMMUNITY_SORT_VALUES)[number])) {
+            response.status(400).json({ error: 'sort must be rating or reviews' });
+            return;
+        }
+        next();
+    },
+];
 
 /** Validates GET /reviews query string: page, limit, tmdbId, mediaType. */
 export const validateListReviewsQuery = [
