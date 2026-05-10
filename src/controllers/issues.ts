@@ -12,6 +12,7 @@
 
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
+import type { IssueStatus, Severity } from '../generated/prisma/enums';
 
 // Fields safe to return on Issue endpoints. reporterEmail is intentionally omitted
 // so it can never be leaked to public list/get responses.
@@ -23,6 +24,12 @@ const PUBLIC_ISSUE_SELECT = {
     status: true,
     createdAt: true,
     updatedAt: true,
+} as const;
+
+// Admin-only select. Includes reporterEmail so admins can follow up on bug reports.
+const ADMIN_ISSUE_SELECT = {
+    ...PUBLIC_ISSUE_SELECT,
+    reporterEmail: true,
 } as const;
 
 export const createIssue = async (request: Request, response: Response) => {
@@ -50,7 +57,7 @@ export const createIssue = async (request: Request, response: Response) => {
 export const getIssues = async (_request: Request, response: Response) => {
     try {
         const issues = await prisma.issue.findMany({
-            select: PUBLIC_ISSUE_SELECT,
+            select: ADMIN_ISSUE_SELECT,
             orderBy: { createdAt: 'desc' },
         });
         response.status(200).json(issues);
@@ -64,7 +71,7 @@ export const getIssueById = async (request: Request, response: Response) => {
         const id = Number(request.params.id);
         const issue = await prisma.issue.findUnique({
             where: { id },
-            select: PUBLIC_ISSUE_SELECT,
+            select: ADMIN_ISSUE_SELECT,
         });
         if (!issue) {
             response.status(404).json({ error: 'Issue not found' });
@@ -76,10 +83,9 @@ export const getIssueById = async (request: Request, response: Response) => {
     }
 };
 
-export const updateIssueStatus = async (request: Request, response: Response) => {
+export const deleteIssue = async (request: Request, response: Response) => {
     try {
         const id = Number(request.params.id);
-        const { status } = request.body;
 
         const existing = await prisma.issue.findUnique({ where: { id } });
         if (!existing) {
@@ -87,10 +93,31 @@ export const updateIssueStatus = async (request: Request, response: Response) =>
             return;
         }
 
+        await prisma.issue.delete({ where: { id } });
+        response.status(204).send();
+    } catch {
+        response.status(500).json({ error: 'Failed to delete issue' });
+    }
+};
+
+export const updateIssue = async (request: Request, response: Response) => {
+    try {
+        const id = Number(request.params.id);
+
+        const existing = await prisma.issue.findUnique({ where: { id } });
+        if (!existing) {
+            response.status(404).json({ error: 'Issue not found' });
+            return;
+        }
+
+        const data: { status?: IssueStatus; severity?: Severity } = {};
+        if (request.body.status !== undefined) data.status = request.body.status;
+        if (request.body.severity !== undefined) data.severity = request.body.severity;
+
         const updated = await prisma.issue.update({
             where: { id },
-            data: { status },
-            select: PUBLIC_ISSUE_SELECT,
+            data,
+            select: ADMIN_ISSUE_SELECT,
         });
         response.status(200).json(updated);
     } catch {

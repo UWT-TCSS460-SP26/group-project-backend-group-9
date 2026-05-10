@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     createReview,
     deleteReview,
+    getMyReviews,
     getReviewById,
     listReviews,
     updateReview,
@@ -17,6 +18,8 @@ import {
 const reviewRoutes = Router();
 
 reviewRoutes.get('/', validateListReviewsQuery, listReviews);
+// /me MUST come before /:id, otherwise Express routes "me" into the id handler.
+reviewRoutes.get('/me', requireAuth, getMyReviews);
 reviewRoutes.get('/:id', validateReviewIdParam, getReviewById);
 reviewRoutes.post('/', requireAuth, validateCreateReviewBody, createReview);
 reviewRoutes.put(

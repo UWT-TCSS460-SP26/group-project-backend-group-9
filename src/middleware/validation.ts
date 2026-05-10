@@ -445,22 +445,40 @@ export const validateIdParam = () => {
 };
 
 /**
- * Validates PUT /issues/:id body: only `status` is allowed and must be a valid IssueStatus.
+ * Validates PATCH /issues/:id body: `status` and/or `severity` are accepted.
+ * At least one must be provided. Unknown fields are rejected with 400.
  */
-export const validateUpdateIssueStatus = () => {
+export const validateUpdateIssue = () => {
+    const allowed = ['status', 'severity'];
     return (request: Request, response: Response, next: NextFunction): void => {
         const body = request.body ?? {};
         const keys = Object.keys(body);
-        if (keys.length !== 1 || keys[0] !== 'status') {
-            response.status(400).json({ error: 'Only the status field is allowed' });
+
+        if (keys.length === 0) {
+            response.status(400).json({ error: 'At least one of status or severity is required' });
             return;
         }
-        if (!ISSUE_STATUSES.includes(body.status)) {
+
+        const unknown = keys.filter((k) => !allowed.includes(k));
+        if (unknown.length > 0) {
+            response.status(400).json({ error: `Unknown field(s): ${unknown.join(', ')}` });
+            return;
+        }
+
+        if (body.status !== undefined && !ISSUE_STATUSES.includes(body.status)) {
             response
                 .status(400)
                 .json({ error: `status must be one of ${ISSUE_STATUSES.join(', ')}` });
             return;
         }
+
+        if (body.severity !== undefined && !ISSUE_SEVERITIES.includes(body.severity)) {
+            response
+                .status(400)
+                .json({ error: `severity must be one of ${ISSUE_SEVERITIES.join(', ')}` });
+            return;
+        }
+
         next();
     };
 };

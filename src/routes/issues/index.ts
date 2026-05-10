@@ -11,26 +11,39 @@
  */
 
 import { Router } from 'express';
-import { createIssue, getIssues, getIssueById, updateIssueStatus } from '../../controllers/issues';
+import {
+    createIssue,
+    getIssues,
+    getIssueById,
+    updateIssue,
+    deleteIssue,
+} from '../../controllers/issues';
 import { requireAuth, requireRoleAtLeast } from '../../middleware/requireAuth';
 import {
     validateCreateIssue,
     validateIdParam,
-    validateUpdateIssueStatus,
+    validateUpdateIssue,
 } from '../../middleware/validation';
 
 const issueRoutes = Router();
 
 issueRoutes.post('/', validateCreateIssue(), createIssue);
-issueRoutes.get('/', requireAuth, getIssues);
-issueRoutes.get('/:id', validateIdParam(), getIssueById);
-issueRoutes.put(
+issueRoutes.get('/', requireAuth, requireRoleAtLeast('Admin'), getIssues);
+issueRoutes.get('/:id', requireAuth, requireRoleAtLeast('Admin'), validateIdParam(), getIssueById);
+issueRoutes.patch(
     '/:id',
     requireAuth,
     requireRoleAtLeast('Admin'),
     validateIdParam(),
-    validateUpdateIssueStatus(),
-    updateIssueStatus
+    validateUpdateIssue(),
+    updateIssue
+);
+issueRoutes.delete(
+    '/:id',
+    requireAuth,
+    requireRoleAtLeast('Admin'),
+    validateIdParam(),
+    deleteIssue
 );
 
 export { issueRoutes };

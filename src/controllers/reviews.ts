@@ -78,6 +78,38 @@ export const updateReview = async (request: Request, response: Response) => {
     response.json(updated);
 };
 
+// Author shape mirrors what Card #55 (origin/authorResponse) will land for all
+// review responses. Inlining it here so this route stays consistent regardless
+// of merge order; collapse to the shared formatter when #55 merges.
+export const getMyReviews = async (request: Request, response: Response) => {
+    try {
+        const localUser = await resolveLocalUser(request);
+
+        const reviews = await prisma.review.findMany({
+            where: { userId: localUser.id },
+            orderBy: { createdAt: 'desc' },
+            include: { user: true },
+        });
+
+        const formatted = reviews.map((row) => {
+            const { user, ...rest } = row as typeof row & {
+                user: { id: number; username: string | null; email: string };
+            };
+            return {
+                ...rest,
+                author: {
+                    id: user.id,
+                    username: user.username ?? user.email,
+                },
+            };
+        });
+
+        response.status(200).json(formatted);
+    } catch {
+        response.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+};
+
 export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
     const id = request.parsedParams!.id!;

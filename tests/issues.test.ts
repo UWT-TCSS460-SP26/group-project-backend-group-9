@@ -33,6 +33,7 @@ const mockIssue = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
 };
 
 jest.mock('../src/prisma', () => ({
@@ -98,6 +99,14 @@ beforeEach(() => {
         if (!issue) return Promise.reject({ code: 'P2025' });
         Object.assign(issue, data, { updatedAt: new Date() });
         return Promise.resolve(project(issue, select));
+    });
+
+    mockIssue.delete.mockImplementation(({ where }: FindArgs) => {
+        const id = where?.id;
+        const issue = id !== undefined ? store.get(id) : undefined;
+        if (!issue) return Promise.reject({ code: 'P2025' });
+        store.delete(id!);
+        return Promise.resolve(issue);
     });
 });
 
@@ -205,98 +214,197 @@ describe('POST /issues', () => {
     });
 });
 
-describe('GET /issues', () => {
-    it('returns 200 with array of issues', async () => {
+describe('GET /issues (admin only)', () => {
+    it('returns 401 when no auth token is provided', async () => {
+        const response = await request(app).get('/issues');
+        expect(response.status).toBe(401);
+    });
+
+    it('returns 403 when caller has User role', async () => {
         const response = await request(app)
             .get('/issues')
             .set('x-test-user', JSON.stringify(authHeader('test-user', 'User')));
+        expect(response.status).toBe(403);
+    });
+
+    it('returns 200 with array of issues when caller is Admin', async () => {
+        const response = await request(app)
+            .get('/issues')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
         expect(response.status).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
     });
 
-    it('does not include reporterEmail in any response item', async () => {
+    it('includes reporterEmail in every response item for Admin caller', async () => {
         await request(app).post('/issues').send({
             title: 'Test issue with email',
-            description: 'Should not leak email.',
+            description: 'Admin should see email.',
             reporterEmail: 'leak-test@example.com',
         });
 
         const response = await request(app)
             .get('/issues')
-            .set('x-test-user', JSON.stringify(authHeader('test-user', 'User')));
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
         expect(response.status).toBe(200);
+        expect(response.body.length).toBeGreaterThan(0);
         for (const issue of response.body) {
-            expect(issue).not.toHaveProperty('reporterEmail');
+            expect(issue).toHaveProperty('reporterEmail');
         }
     });
 });
 
-describe('GET /issues/:id', () => {
-    it('returns 200 with the issue when id exists', async () => {
+describe('GET /issues/:id (admin only)', () => {
+    it('returns 401 when no auth token is provided', async () => {
         const createResponse = await request(app)
             .post('/issues')
             .send({ title: 'Findable', description: 'Look me up.' });
         const id = createResponse.body.id;
 
         const response = await request(app).get(`/issues/${id}`);
+        expect(response.status).toBe(401);
+    });
+
+    it('returns 403 when caller has User role', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Findable', description: 'Look me up.' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .get(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-user', 'User')));
+        expect(response.status).toBe(403);
+    });
+
+    it('returns 200 with the issue when caller is Admin and id exists', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Findable', description: 'Look me up.' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .get(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(id);
     });
 
-    it('returns 404 when id does not exist', async () => {
-        const response = await request(app).get('/issues/999999');
+    it('returns 404 when id does not exist (Admin caller)', async () => {
+        const response = await request(app)
+            .get('/issues/999999')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
         expect(response.status).toBe(404);
     });
 
-    it('returns 400 when id is not a positive integer', async () => {
-        const response = await request(app).get('/issues/abc');
+    it('returns 400 when id is not a positive integer (Admin caller)', async () => {
+        const response = await request(app)
+            .get('/issues/abc')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
         expect(response.status).toBe(400);
     });
 
-    it('does not include reporterEmail in the response', async () => {
+    it('includes reporterEmail in the response for Admin caller', async () => {
         const createResponse = await request(app).post('/issues').send({
-            title: 'Email leak test',
-            description: 'Single get should also strip.',
-            reporterEmail: 'single-leak@example.com',
+            title: 'Email visibility test',
+            description: 'Admin GET /:id should include reporterEmail.',
+            reporterEmail: 'admin-visible@example.com',
         });
         const id = createResponse.body.id;
 
-        const response = await request(app).get(`/issues/${id}`);
-        expect(response.body).not.toHaveProperty('reporterEmail');
+        const response = await request(app)
+            .get(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin', 'Admin')));
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('reporterEmail', 'admin-visible@example.com');
     });
 });
 
-describe('PUT /issues/:id', () => {
+describe('PATCH /issues/:id', () => {
     it('returns 401 when no auth token is provided', async () => {
-        const response = await request(app).put('/issues/1').send({ status: 'Resolved' });
+        const response = await request(app).patch('/issues/1').send({ status: 'Resolved' });
         expect(response.status).toBe(401);
     });
 
     it('returns 403 when caller has User role (insufficient permissions)', async () => {
         const response = await request(app)
-            .put('/issues/1')
+            .patch('/issues/1')
             .set('x-test-user', JSON.stringify(authHeader('test-user-1', 'User')))
             .send({ status: 'Resolved' });
         expect(response.status).toBe(403);
     });
 
-    it('returns 200 when caller is Admin and id exists', async () => {
+    it('returns 200 with updated status when caller is Admin', async () => {
         const createResponse = await request(app)
             .post('/issues')
             .send({ title: 'To be resolved', description: 'Admin will close this.' });
         const id = createResponse.body.id;
 
         const response = await request(app)
-            .put(`/issues/${id}`)
+            .patch(`/issues/${id}`)
             .set('x-test-user', JSON.stringify(authHeader('test-admin-1', 'Admin')))
             .send({ status: 'Resolved' });
         expect(response.status).toBe(200);
         expect(response.body.status).toBe('Resolved');
     });
 
+    it('returns 200 with updated severity when caller is Admin', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Severity bump', description: 'Reclassify this one.' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .patch(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-1b', 'Admin')))
+            .send({ severity: 'Critical' });
+        expect(response.status).toBe(200);
+        expect(response.body.severity).toBe('Critical');
+    });
+
+    it('returns 200 and updates both status and severity together', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Both fields', description: 'Update both at once.' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .patch(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-1c', 'Admin')))
+            .send({ status: 'InProgress', severity: 'Major' });
+        expect(response.status).toBe(200);
+        expect(response.body.status).toBe('InProgress');
+        expect(response.body.severity).toBe('Major');
+    });
+
+    it('returns 400 when body is empty', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Empty body test', description: '...' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .patch(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-empty', 'Admin')))
+            .send({});
+        expect(response.status).toBe(400);
+    });
+
+    it('returns 400 when body contains an unknown field', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Unknown field test', description: '...' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .patch(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-unknown', 'Admin')))
+            .send({ status: 'Open', color: 'red' });
+        expect(response.status).toBe(400);
+    });
+
     it('returns 404 when id does not exist (Admin caller)', async () => {
         const response = await request(app)
-            .put('/issues/999999')
+            .patch('/issues/999999')
             .set('x-test-user', JSON.stringify(authHeader('test-admin-2', 'Admin')))
             .send({ status: 'Resolved' });
         expect(response.status).toBe(404);
@@ -309,37 +417,103 @@ describe('PUT /issues/:id', () => {
         const id = createResponse.body.id;
 
         const response = await request(app)
-            .put(`/issues/${id}`)
+            .patch(`/issues/${id}`)
             .set('x-test-user', JSON.stringify(authHeader('test-admin-3', 'Admin')))
             .send({ status: 'Bogus' });
         expect(response.status).toBe(400);
     });
 
-    it('rejects body fields other than status', async () => {
+    it('returns 400 when severity value is invalid', async () => {
         const createResponse = await request(app)
             .post('/issues')
-            .send({ title: 'Field strip test', description: '...' });
+            .send({ title: 'Bad severity test', description: '...' });
         const id = createResponse.body.id;
 
         const response = await request(app)
-            .put(`/issues/${id}`)
-            .set('x-test-user', JSON.stringify(authHeader('test-admin-4', 'Admin')))
-            .send({ status: 'InProgress', title: 'Hijack attempt' });
+            .patch(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-3b', 'Admin')))
+            .send({ severity: 'P0' });
         expect(response.status).toBe(400);
     });
 
-    it('does not include reporterEmail in the PUT response', async () => {
+    it('includes reporterEmail in the PATCH response for Admin caller', async () => {
         const createResponse = await request(app).post('/issues').send({
-            title: 'Put strip test',
+            title: 'Email visibility on patch',
             description: '...',
-            reporterEmail: 'put-leak@example.com',
+            reporterEmail: 'patch-visible@example.com',
         });
         const id = createResponse.body.id;
 
         const response = await request(app)
-            .put(`/issues/${id}`)
+            .patch(`/issues/${id}`)
             .set('x-test-user', JSON.stringify(authHeader('test-admin-5', 'Admin')))
             .send({ status: 'Resolved' });
-        expect(response.body).not.toHaveProperty('reporterEmail');
+        expect(response.body).toHaveProperty('reporterEmail', 'patch-visible@example.com');
+    });
+
+    it('returns 404 on PUT (old method is gone)', async () => {
+        const response = await request(app)
+            .put('/issues/1')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-put', 'Admin')))
+            .send({ status: 'Resolved' });
+        expect(response.status).toBe(404);
+    });
+});
+
+describe('DELETE /issues/:id', () => {
+    it('returns 401 when no auth token is provided', async () => {
+        const response = await request(app).delete('/issues/1');
+        expect(response.status).toBe(401);
+    });
+
+    it('returns 403 when caller has User role', async () => {
+        const response = await request(app)
+            .delete('/issues/1')
+            .set('x-test-user', JSON.stringify(authHeader('test-user-del', 'User')));
+        expect(response.status).toBe(403);
+    });
+
+    it('returns 204 with no body when caller is Admin and id exists', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'To be deleted', description: 'Admin will remove this.' });
+        const id = createResponse.body.id;
+
+        const response = await request(app)
+            .delete(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-del', 'Admin')));
+        expect(response.status).toBe(204);
+        expect(response.body).toEqual({});
+    });
+
+    it('returns 404 when id does not exist (Admin caller)', async () => {
+        const response = await request(app)
+            .delete('/issues/999999')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-del2', 'Admin')));
+        expect(response.status).toBe(404);
+    });
+
+    it('returns 400 when id is not a positive integer', async () => {
+        const response = await request(app)
+            .delete('/issues/abc')
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-del3', 'Admin')));
+        expect(response.status).toBe(400);
+    });
+
+    it('after successful DELETE, GET on the same id returns 404', async () => {
+        const createResponse = await request(app)
+            .post('/issues')
+            .send({ title: 'Round-trip delete', description: '...' });
+        const id = createResponse.body.id;
+
+        const deleteResponse = await request(app)
+            .delete(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-del4', 'Admin')));
+        expect(deleteResponse.status).toBe(204);
+
+        const getResponse = await request(app)
+            .get(`/issues/${id}`)
+            .set('x-test-user', JSON.stringify(authHeader('test-admin-del4', 'Admin')));
+        expect(getResponse.status).toBe(404);
     });
 });
