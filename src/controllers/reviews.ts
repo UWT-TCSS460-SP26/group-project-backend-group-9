@@ -64,7 +64,7 @@ export const listReviews = async (request: Request, response: Response) => {
     const where: { tmdbId?: number; mediaType?: 'MOVIE' | 'TV' } = {};
     if (tmdbId !== undefined) where.tmdbId = tmdbId;
     if (mediaType !== undefined) where.mediaType = mediaType;
-  
+
     try {
         const [results, total] = await Promise.all([
             prisma.review.findMany({
