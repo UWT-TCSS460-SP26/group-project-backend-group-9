@@ -1122,6 +1122,22 @@ components:
                     items:
                         type: string
                     example: [Drama, Crime]
+
+        Author:
+            type: object
+            description: |
+                The stable public identity of the user who wrote a review or rating.
+                `username` is always present — if a user somehow has no username set,
+                the API falls back to their email address.
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                username:
+                    type: string
+                    example: alice
+            required: [id, username]
+
         Review:
             type: object
             properties:
@@ -1149,6 +1165,8 @@ components:
                 userId:
                     type: integer
                     example: 1
+                author:
+                    $ref: '#/components/schemas/Author'
                 createdAt:
                     type: string
                     format: date-time
