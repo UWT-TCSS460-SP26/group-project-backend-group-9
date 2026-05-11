@@ -93,6 +93,13 @@ describe('Show routes', () => {
             const response = await request(app).get('/shows/1396');
             expect(response.status).toBe(500);
         });
+
+        it('returns 500 when MOVIE_READ_KEY is not set', async () => {
+            delete process.env.MOVIE_READ_KEY;
+
+            const response = await request(app).get('/shows/1396');
+            expect(response.status).toBe(500);
+        });
     });
 
     describe('GET /shows/search?', () => {
@@ -124,6 +131,23 @@ describe('Show routes', () => {
 
             const res = await request(app).get('/shows/search');
             expect(res.status).toBe(502);
+        });
+
+        it('returns 500 when MOVIE_READ_KEY is not set', async () => {
+            delete process.env.MOVIE_READ_KEY;
+
+            const res = await request(app).get('/shows/search');
+            expect(res.status).toBe(500);
+        });
+
+        it.each([
+            ['non-date after', '?after=not-a-date'],
+            ['non-date before', '?before=not-a-date'],
+            ['invalid month in after', '?after=2023-13-01'],
+        ])('returns 400 for %s', async (_label, query) => {
+            const res = await request(app).get(`/shows/search${query}`);
+            expect(res.status).toBe(400);
+            expect(mockFetch).not.toHaveBeenCalled();
         });
     });
 });
