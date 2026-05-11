@@ -86,6 +86,13 @@ const IssueUpdateSchema = z
         message: 'At least one of status or severity is required',
     });
 
+const CommunityListSchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(50).default(20),
+    minReviews: z.coerce.number().int().min(0).default(0),
+    sort: z.literal(['rating', 'reviews']),
+});
+
 /**
  * Generic middleware factory. Parses `request[source]` against `schema`;
  * on failure responds 400 with issue details, on success sets
@@ -123,6 +130,7 @@ export const validateReviewUpdateBody = validate('body', ReviewUpdateSchema);
 export const validateUserUpdateBody = validate('body', UserUpdateSchema);
 export const validateIssueCreateBody = validate('body', IssueCreateSchema);
 export const validateIssueUpdateBody = validate('body', IssueUpdateSchema);
+export const validateCommunityListParams = validate('query', CommunityListSchema);
 
 // --- Types inferred from schemas (no hand-written interfaces needed) ---
 
@@ -134,6 +142,7 @@ export type ReviewUpdate = z.infer<typeof ReviewUpdateSchema>;
 export type UserUpdate = z.infer<typeof UserUpdateSchema>;
 export type IssueCreate = z.infer<typeof IssueCreateSchema>;
 export type IssueUpdate = z.infer<typeof IssueUpdateSchema>;
+export type CommunityList = z.infer<typeof CommunityListSchema>;
 
 // Miscellaneous validation middleware
 
