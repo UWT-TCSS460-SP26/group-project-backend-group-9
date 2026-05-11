@@ -111,6 +111,22 @@ export const updateReview = async (request: Request, response: Response) => {
     }
 };
 
+export const getMyReviews = async (request: Request, response: Response) => {
+    try {
+        const localUser = await resolveLocalUser(request);
+
+        const reviews = await prisma.review.findMany({
+            where: { userId: localUser.id },
+            orderBy: { createdAt: 'desc' },
+            include: reviewInclude,
+        });
+
+        response.status(200).json(reviews.map(formatReview));
+    } catch {
+        response.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+};
+
 export const deleteReview = async (request: Request, response: Response) => {
     const user = request.user!;
     const { id } = request.validated!.params! as { id: number };

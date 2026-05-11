@@ -1,4 +1,4 @@
-import { RequestHandler, Request, Response, NextFunction } from 'express';
+﻿import { RequestHandler, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 
 declare global {
@@ -76,9 +76,15 @@ const IssueCreateSchema = z.object({
     severity: z.literal(['Minor', 'Major', 'Critical']).default('Minor'),
 });
 
-const IssueUpdateSchema = z.object({
-    status: z.literal(['Open', 'InProgress', 'Resolved', 'Closed']),
-});
+const IssueUpdateSchema = z
+    .object({
+        status: z.literal(['Open', 'InProgress', 'Resolved', 'Closed']).optional(),
+        severity: z.literal(['Minor', 'Major', 'Critical']).optional(),
+    })
+    .strict()
+    .refine((obj) => obj.status !== undefined || obj.severity !== undefined, {
+        message: 'At least one of status or severity is required',
+    });
 
 const CommunityListSchema = z.object({
     page: z.coerce.number().int().positive().default(1),
