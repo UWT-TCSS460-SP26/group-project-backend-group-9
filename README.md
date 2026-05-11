@@ -13,7 +13,7 @@ under the `group-9-api` audience.
 
 ## Endpoints
 
-Endpoints are documented in the [API docs]([https://tcss460-token-playground.onrender.com/](https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/)api-docs)
+Endpoints are documented in the [API docs](https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/api-docs)
 
 ## CORS
 
@@ -22,7 +22,7 @@ CORS allow-list:
 - `http://localhost:3000`
 
 To have an origin added to the allow-list, submit an issue
-at our [issue reporting endpoint]([https://tcss460-token-playground.onrender.com/](https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/)report)
+at our [issue reporting endpoint](https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/report)
 
 ## Reporting Bugs
 
