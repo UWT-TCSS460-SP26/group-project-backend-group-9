@@ -153,3 +153,27 @@ Meeting concluded.
 The team updated each other on current progress, any blockers or other issues.
 
 Meeting concluded.
+
+## Meeting - Monday, May 4 2026
+
+Raiden created a project board for the team to divvy tasks.
+Everyone went over their workload for the week.
+Everyone talked about what they did over the weekend.
+
+Meeting concluded.
+
+## Meeting - Tuesday, May 5 2026
+
+Prod went down, so Raiden and Saeed worked on getting ot back up.
+Riley joined in during the second half of fix efforts and gave valuable input.
+Meeting with Charles Bryan.
+
+Meeting concluded.
+
+## Meeting - Friday, May 8 2026
+
+Went over what we have gotten done over the last few days.
+Everyone was satisfied with their progress, no notes.
+Agreed to have everything done by Sunday EOD.
+
+Meeting concluded.
