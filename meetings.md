@@ -164,7 +164,7 @@ Meeting concluded.
 
 ## Meeting - Tuesday, May 5 2026
 
-Prod went down, so Raiden and Saeed worked on getting ot back up.
+Prod went down, so Raiden and Saeed worked on getting it back up.
 Riley joined in during the second half of fix efforts and gave valuable input.
 Meeting with Charles Bryan.
 
