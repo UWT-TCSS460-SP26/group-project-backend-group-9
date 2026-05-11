@@ -37,6 +37,17 @@ const authHeader = (
     email: email,
 });
 
+// sampleUser is what Prisma returns when include: { user: true } is used.
+// The controller's formatReview() strips this down to author: { id, username }.
+const sampleUser = {
+    id: 1,
+    subjectId: 'auth0|abc123',
+    username: 'alice',
+    email: 'alice@example.com',
+    role: 'User',
+    createdAt: new Date('2026-04-01T00:00:00.000Z'),
+};
+
 const sampleReview = {
     id: 42,
     tmdbId: 961323,
@@ -47,6 +58,7 @@ const sampleReview = {
     userId: 1,
     createdAt: new Date('2026-04-25T18:30:00.000Z'),
     updatedAt: new Date('2026-04-25T18:30:00.000Z'),
+    user: sampleUser,
 };
 
 beforeEach(() => {
@@ -73,9 +85,10 @@ describe('POST /reviews', () => {
 
         expect(res.status).toBe(201);
         expect(res.body.id).toBe(42);
-        expect(res.body.userId).toBe(1);
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
         expect(mockReview.create).toHaveBeenCalledWith({
             data: { ...validBody, userId: 1 },
+            include: { user: true },
         });
     });
 
@@ -129,7 +142,11 @@ describe('GET /reviews/:id', () => {
         const res = await request(app).get('/reviews/42');
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(42);
-        expect(mockReview.findUnique).toHaveBeenCalledWith({ where: { id: 42 } });
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
+        expect(mockReview.findUnique).toHaveBeenCalledWith({
+            where: { id: 42 },
+            include: { user: true },
+        });
     });
 
     it('returns 404 when not found', async () => {
@@ -142,6 +159,21 @@ describe('GET /reviews/:id', () => {
         const res = await request(app).get('/reviews/abc');
         expect(res.status).toBe(400);
         expect(mockReview.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('falls back to email when username is missing', async () => {
+        // Gap 2: formatReview uses `username ?? email`. This test proves the fallback
+        // fires correctly so the sprint's documented behavior is verified in code.
+        const noUsernameSample = {
+            ...sampleReview,
+            user: { ...sampleUser, username: null },
+        };
+        mockReview.findUnique.mockResolvedValue(noUsernameSample);
+
+        const res = await request(app).get('/reviews/42');
+
+        expect(res.status).toBe(200);
+        expect(res.body.author.username).toBe('alice@example.com');
     });
 });
 
@@ -158,11 +190,25 @@ describe('GET /reviews', () => {
         expect(res.body.total).toBe(1);
         expect(res.body.results).toHaveLength(1);
         expect(mockReview.findMany).toHaveBeenCalledWith({
-            where: {},
+            where: { mediaType: 'MOVIE' },
             orderBy: { createdAt: 'desc' },
             skip: 0,
             take: 20,
+            include: { user: true },
         });
+    });
+
+    it('includes author on each result and does not leak raw user data', async () => {
+        // Gap 1 + 3: every item in `results` must have author.id and author.username,
+        // and the raw `user` join must not appear in the response.
+        mockReview.findMany.mockResolvedValue([sampleReview]);
+        mockReview.count.mockResolvedValue(1);
+
+        const res = await request(app).get('/reviews');
+        const item = res.body.results[0];
+
+        expect(item.author).toEqual({ id: 1, username: 'alice' });
+        expect(item.user).toBeUndefined();
     });
 
     it('honors page and limit query params', async () => {
@@ -179,15 +225,13 @@ describe('GET /reviews', () => {
         );
     });
 
-    it('clamps limit to a maximum of 100', async () => {
+    it('disallows limit beyond 100', async () => {
         mockReview.findMany.mockResolvedValue([]);
         mockReview.count.mockResolvedValue(0);
 
         const res = await request(app).get('/reviews?limit=9999');
 
-        expect(res.status).toBe(200);
-        expect(res.body.limit).toBe(100);
-        expect(mockReview.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+        expect(res.status).toBe(400);
     });
 
     it('filters by tmdbId and mediaType', async () => {
@@ -242,9 +286,11 @@ describe('PUT /reviews/:id', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.title).toBe('Updated');
+        expect(res.body.author).toEqual({ id: 1, username: 'alice' });
         expect(mockReview.update).toHaveBeenCalledWith({
             where: { id: 42 },
             data: updateBody,
+            include: { user: true },
         });
     });
 
@@ -362,5 +408,94 @@ describe('DELETE /reviews/:id', () => {
             .set('x-test-user', JSON.stringify(authHeader('1')));
 
         expect(res.status).toBe(404);
+    });
+});
+
+describe('GET /reviews/me', () => {
+    // resolveLocalUser is stubbed (tests/setup.ts) to derive local user id from
+    // the numeric portion of `sub`. authHeader('1') → user id 1.
+
+    const reviewForUser = (id: number, userId: number, username = 'alice') => ({
+        id,
+        tmdbId: 100 + id,
+        mediaType: 'MOVIE',
+        title: `Review ${id}`,
+        body: `Body ${id}`,
+        score: 7,
+        userId,
+        createdAt: new Date(`2026-04-25T18:30:0${id}.000Z`),
+        updatedAt: new Date(`2026-04-25T18:30:0${id}.000Z`),
+        user: {
+            id: userId,
+            subjectId: `user-${userId}`,
+            username,
+            email: `${username}@example.com`,
+            role: 'User',
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+    });
+
+    it('returns 401 when no auth token is provided', async () => {
+        const res = await request(app).get('/reviews/me');
+        expect(res.status).toBe(401);
+    });
+
+    it("returns 200 with the caller's reviews only", async () => {
+        mockReview.findMany.mockResolvedValue([
+            reviewForUser(1, 1, 'alice'),
+            reviewForUser(2, 1, 'alice'),
+        ]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toHaveLength(2);
+        expect(mockReview.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { userId: 1 },
+                orderBy: { createdAt: 'desc' },
+                include: { user: true },
+            })
+        );
+    });
+
+    it('returns an empty array (200, not 404) when caller has no reviews', async () => {
+        mockReview.findMany.mockResolvedValue([]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual([]);
+    });
+
+    it('ignores any ?userId query parameter and uses the JWT sub', async () => {
+        mockReview.findMany.mockResolvedValue([reviewForUser(1, 1, 'alice')]);
+
+        const res = await request(app)
+            .get('/reviews/me?userId=999')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        const callArg = mockReview.findMany.mock.calls[0][0];
+        expect(callArg.where).toEqual({ userId: 1 });
+    });
+
+    it('includes an author identity object on each review', async () => {
+        mockReview.findMany.mockResolvedValue([reviewForUser(1, 1, 'alice')]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(res.body[0]).toHaveProperty('author');
+        expect(res.body[0].author).toEqual({ id: 1, username: 'alice' });
+        // raw user join should not be leaked
+        expect(res.body[0]).not.toHaveProperty('user');
     });
 });
