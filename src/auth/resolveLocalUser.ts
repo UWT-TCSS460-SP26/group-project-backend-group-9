@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import { prisma } from '../prisma';
 import type { UserModel } from '../generated/prisma/models';
+import { hasRoleAtLeast, Role } from '../middleware/requireAuth';
 
 /**
  * Upserts a local User row keyed by the auth-squared `sub` claim, then returns
@@ -33,7 +34,7 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
     const email = info?.email ?? claimEmail ?? `${sub}@placeholder.local`;
     const username =
         info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub.slice(0, 12)}`);
-    const role = info?.role ?? claimRole ?? 'User';
+    const role: Role = hasRoleAtLeast(claimRole, 'Admin') ? 'Admin' : 'User';
 
     // upsert (not create) to tolerate a race between two concurrent first-time
     // requests for the same sub.
