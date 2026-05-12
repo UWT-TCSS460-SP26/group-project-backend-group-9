@@ -84,13 +84,17 @@ export const requireRole = (role: Role): RequestHandler => {
                 return;
             }
             // Check against local user role so we can control role without going to Auth2
-            const localUser = await resolveLocalUser(request);
-
-            if (localUser.role !== role) {
-                response.status(403).json({ error: 'Insufficient permissions' });
-                return;
-            }
-            next();
+            const localUser = resolveLocalUser(request);
+            localUser.then(
+                (res) => {
+                    if (res.role !== role) {
+                        response.status(403).json({ error: 'Insufficient permissions' });
+                        return;
+                    }
+                    next();
+                },
+                () => response.status(500).json({ error: 'Internal server error' })
+            );
         } catch (_error) {
             response.status(500).json({ error: 'Internal server error' });
             return;
@@ -112,14 +116,18 @@ export const requireRoleAtLeast = (minRole: Role): RequestHandler => {
                 return;
             }
             // Check against local user role so we can control role without going to Auth2
-            const localUser = await resolveLocalUser(request);
-
-            const userIdx = ROLE_HIERARCHY.indexOf(localUser.role);
-            if (userIdx < 0 || userIdx < minIdx) {
-                response.status(403).json({ error: 'Insufficient permissions' });
-                return;
-            }
-            next();
+            const localUser = resolveLocalUser(request);
+            localUser.then(
+                (res) => {
+                    const userIdx = ROLE_HIERARCHY.indexOf(res.role);
+                    if (userIdx < 0 || userIdx < minIdx) {
+                        response.status(403).json({ error: 'Insufficient permissions' });
+                        return;
+                    }
+                    next();
+                },
+                () => response.status(500).json({ error: 'Internal server error' })
+            );
         } catch (_error) {
             response.status(500).json({ error: 'Internal server error' });
         }
