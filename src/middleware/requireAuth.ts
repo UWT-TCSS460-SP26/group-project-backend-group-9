@@ -93,7 +93,10 @@ export const requireRole = (role: Role): RequestHandler => {
                     }
                     next();
                 },
-                () => response.status(500).json({ error: 'Internal server error' })
+                () => {
+                    response.status(500).json({ error: 'Internal server error' });
+                    return;
+                }
             );
         } catch (_error) {
             response.status(500).json({ error: 'Internal server error' });
@@ -126,7 +129,10 @@ export const requireRoleAtLeast = (minRole: Role): RequestHandler => {
                     }
                     next();
                 },
-                () => response.status(500).json({ error: 'Internal server error' })
+                () => {
+                    response.status(500).json({ error: 'Internal server error' });
+                    return;
+                }
             );
         } catch (_error) {
             response.status(500).json({ error: 'Internal server error' });
