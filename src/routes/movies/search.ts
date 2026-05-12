@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { getMovies } from '../../controllers/movies';
-import { validateMovieSearch } from '../../middleware/validation';
+import { requireEnvVar, validateMovieSearchParams } from '../../middleware/validation';
 
 const searchRoutes = Router();
 
-searchRoutes.get('/', validateMovieSearch(), getMovies);
+searchRoutes.get('/', requireEnvVar('MOVIE_READ_KEY'), validateMovieSearchParams, getMovies);
 
 export { searchRoutes };
