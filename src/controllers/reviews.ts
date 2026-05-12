@@ -128,7 +128,6 @@ export const getMyReviews = async (request: Request, response: Response) => {
 };
 
 export const deleteReview = async (request: Request, response: Response) => {
-    const user = request.user!;
     const { id } = request.validated!.params! as { id: number };
 
     try {
@@ -139,7 +138,10 @@ export const deleteReview = async (request: Request, response: Response) => {
         }
         // can't be null because userId is a required field of a review. Any existing review will have an associated userId
         const existingUser = await resolveLocalUser(request);
-        if (existingUser.id !== existingReview.userId && !hasRoleAtLeast(user.role, 'Admin')) {
+        if (
+            existingUser.id !== existingReview.userId &&
+            !hasRoleAtLeast(existingUser.role, 'Admin')
+        ) {
             response.status(403).json({ error: 'Forbidden' });
             return;
         }

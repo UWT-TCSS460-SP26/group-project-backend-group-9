@@ -42,7 +42,7 @@ const authHeader = (
 const sampleUser = {
     id: 1,
     email: 'alice@example.com',
-    role: 'USER',
+    role: 'User',
     createdAt: new Date('2026-04-25T14:00:00.000Z'),
 };
 

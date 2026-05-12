@@ -3,23 +3,21 @@
 // the first numeric group out of the sub and returns that as the local PK.
 // Tests that want a specific local id set it explicitly in the JWT sub.
 jest.mock('../src/auth/resolveLocalUser', () => ({
-    resolveLocalUser: jest.fn(async (request: { user?: { sub: string; email?: string } }) => {
-        const sub = request.user!.sub;
-        const match = sub.match(/(\d+)/);
-        const id = match ? Number(match[1]) : 0;
-        return {
-            id,
-            subjectId: sub,
-            username: `user-${sub.slice(0, 12)}`,
-            email: request.user?.email ?? `${sub}@test.local`,
-            firstName: 'Unknown',
-            lastName: 'User',
-            role: 'User',
-            active: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-    }),
+    resolveLocalUser: jest.fn(
+        async (request: { user?: { sub: string; email?: string; role: string } }) => {
+            const sub = request.user!.sub;
+            const match = sub.match(/(\d+)/);
+            const id = match ? Number(match[1]) : 0;
+            return {
+                id,
+                subjectId: sub,
+                username: `user-${sub.slice(0, 12)}`,
+                email: request.user?.email ?? `${sub}@test.local`,
+                role: request.user!.role,
+                createdAt: new Date(),
+            };
+        }
+    ),
 }));
 
 // Middleware stub — bypasses JWKS network calls and trusts an

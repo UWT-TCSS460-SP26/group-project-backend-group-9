@@ -36,7 +36,6 @@ export const getUserById = async (request: Request, response: Response) => {
 };
 
 export const updateUser = async (request: Request, response: Response) => {
-    const user = request.user!;
     const { id } = request.validated!.params! as { id: number };
     const { email, role } = request.validated!.body as UserUpdate;
 
@@ -52,7 +51,7 @@ export const updateUser = async (request: Request, response: Response) => {
         if (email) {
             updateData.email = email;
         }
-        if (role && hasRoleAtLeast(user.role, 'Admin')) {
+        if (role && hasRoleAtLeast(existing.role, 'Admin')) {
             updateData.role = role;
         }
 
@@ -76,7 +75,6 @@ export const updateUser = async (request: Request, response: Response) => {
 };
 
 export const deleteUser = async (request: Request, response: Response) => {
-    const user = request.user!;
     const { id } = request.validated!.params! as { id: number };
 
     try {

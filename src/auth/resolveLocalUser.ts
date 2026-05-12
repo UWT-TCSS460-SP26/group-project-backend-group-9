@@ -12,7 +12,7 @@ import type { UserModel } from '../generated/prisma/models';
  * handler body, and the auth middleware itself is side-effect-free.
  */
 export const resolveLocalUser = async (request: Request): Promise<UserModel> => {
-    const { sub, email: claimEmail } = request.user!;
+    const { sub, email: claimEmail, role: claimRole } = request.user!;
 
     // Fast path: the local row itself caches the auth-squared enrichment, so
     // userinfo is called at most once per sub — not per request.
@@ -33,13 +33,14 @@ export const resolveLocalUser = async (request: Request): Promise<UserModel> => 
     const email = info?.email ?? claimEmail ?? `${sub}@placeholder.local`;
     const username =
         info?.username ?? (info?.email ? info.email.split('@')[0] : `user-${sub.slice(0, 12)}`);
+    const role = info?.role ?? claimRole ?? 'User';
 
     // upsert (not create) to tolerate a race between two concurrent first-time
     // requests for the same sub.
     return prisma.user.upsert({
         where: { subjectId: sub },
         update: {},
-        create: { subjectId: sub, username, email },
+        create: { subjectId: sub, username, email, role },
     });
 };
 
