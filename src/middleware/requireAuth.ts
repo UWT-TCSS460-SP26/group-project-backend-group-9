@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
 import { expressjwt, type Request as JwtRequest } from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
+import { resolveLocalUser } from '../auth/resolveLocalUser';
 
 export const ROLE_HIERARCHY = ['User', 'Moderator', 'Admin', 'SuperAdmin', 'Owner'] as const;
 export type Role = (typeof ROLE_HIERARCHY)[number];
@@ -65,9 +66,6 @@ const handleAuthError: ErrorRequestHandler = (error, _request, response, next) =
 /**
  * Verifies the Authorization: Bearer <token> header against the auth-squared
  * issuer's JWKS (RS256) and attaches the decoded payload to request.user.
- *
- * Replaces backend-2's HS256 + JWT_SECRET verification. Token issuance is
- * entirely owned by auth-squared; this API never mints tokens.
  */
 export const requireAuth: Array<RequestHandler | ErrorRequestHandler> = [
     verifyJwt,
@@ -76,21 +74,27 @@ export const requireAuth: Array<RequestHandler | ErrorRequestHandler> = [
 ];
 
 /**
- * Exact-match role gate. Use after requireAuth:
- *
- *   router.delete('/messages/:id', requireAuth, requireRole('Admin'), handler);
+ * Exact-match role gate. Use after requireAuth.
  */
 export const requireRole = (role: Role): RequestHandler => {
     return (request: Request, response: Response, next: NextFunction): void => {
-        if (!request.user) {
-            response.status(401).json({ error: 'Not authenticated' });
+        try {
+            if (!request.user) {
+                response.status(401).json({ error: 'Not authenticated' });
+                return;
+            }
+            // Check against local user role so we can control role without going to Auth2
+            const localUser = await resolveLocalUser(request);
+
+            if (localUser.role !== role) {
+                response.status(403).json({ error: 'Insufficient permissions' });
+                return;
+            }
+            next();
+        } catch (_error) {
+            response.status(500).json({ error: 'Internal server error' });
             return;
         }
-        if (request.user.role !== role) {
-            response.status(403).json({ error: 'Insufficient permissions' });
-            return;
-        }
-        next();
     };
 };
 
@@ -98,21 +102,27 @@ export const requireRole = (role: Role): RequestHandler => {
  * Minimum-role gate using the 5-tier auth-squared hierarchy:
  * User < Moderator < Admin < SuperAdmin < Owner
  *
- *   router.delete('/messages/:id', requireAuth, requireRoleAtLeast('Admin'), handler);
  */
 export const requireRoleAtLeast = (minRole: Role): RequestHandler => {
     const minIdx = ROLE_HIERARCHY.indexOf(minRole);
     return (request: Request, response: Response, next: NextFunction): void => {
-        if (!request.user) {
-            response.status(401).json({ error: 'Not authenticated' });
-            return;
+        try {
+            if (!request.user) {
+                response.status(401).json({ error: 'Not authenticated' });
+                return;
+            }
+            // Check against local user role so we can control role without going to Auth2
+            const localUser = await resolveLocalUser(request);
+
+            const userIdx = ROLE_HIERARCHY.indexOf(localUser.role);
+            if (userIdx < 0 || userIdx < minIdx) {
+                response.status(403).json({ error: 'Insufficient permissions' });
+                return;
+            }
+            next();
+        } catch (_error) {
+            response.status(500).json({ error: 'Internal server error' });
         }
-        const userIdx = ROLE_HIERARCHY.indexOf(request.user.role);
-        if (userIdx < 0 || userIdx < minIdx) {
-            response.status(403).json({ error: 'Insufficient permissions' });
-            return;
-        }
-        next();
     };
 };
 

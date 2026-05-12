@@ -5,19 +5,14 @@ import { defineConfig } from 'prisma/config';
 export default defineConfig({
     schema: path.join('prisma', 'schema.prisma'),
     datasource: {
-        url: process.env.DATABASE_URL!,
+        url: process.env.DATABASE!,
     },
     migrate: {
         // Dynamic imports keep pg out of the CLI bundle; same connection as the app runtime.
         async adapter() {
             const { Pool } = await import('pg');
             const { PrismaPg } = await import('@prisma/adapter-pg');
-            const pool = new Pool({
-                connectionString: process.env.DATABASE_URL,
-                ssl: process.env.DATABASE_URL?.includes('localhost')
-                    ? false
-                    : { rejectUnauthorized: false },
-            });
+            const pool = new Pool({ connectionString: process.env.DATABASE });
             return new PrismaPg(pool);
         },
     },
