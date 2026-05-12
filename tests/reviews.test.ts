@@ -410,3 +410,92 @@ describe('DELETE /reviews/:id', () => {
         expect(res.status).toBe(404);
     });
 });
+
+describe('GET /reviews/me', () => {
+    // resolveLocalUser is stubbed (tests/setup.ts) to derive local user id from
+    // the numeric portion of `sub`. authHeader('1') → user id 1.
+
+    const reviewForUser = (id: number, userId: number, username = 'alice') => ({
+        id,
+        tmdbId: 100 + id,
+        mediaType: 'MOVIE',
+        title: `Review ${id}`,
+        body: `Body ${id}`,
+        score: 7,
+        userId,
+        createdAt: new Date(`2026-04-25T18:30:0${id}.000Z`),
+        updatedAt: new Date(`2026-04-25T18:30:0${id}.000Z`),
+        user: {
+            id: userId,
+            subjectId: `user-${userId}`,
+            username,
+            email: `${username}@example.com`,
+            role: 'User',
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+    });
+
+    it('returns 401 when no auth token is provided', async () => {
+        const res = await request(app).get('/reviews/me');
+        expect(res.status).toBe(401);
+    });
+
+    it("returns 200 with the caller's reviews only", async () => {
+        mockReview.findMany.mockResolvedValue([
+            reviewForUser(1, 1, 'alice'),
+            reviewForUser(2, 1, 'alice'),
+        ]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toHaveLength(2);
+        expect(mockReview.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { userId: 1 },
+                orderBy: { createdAt: 'desc' },
+                include: { user: true },
+            })
+        );
+    });
+
+    it('returns an empty array (200, not 404) when caller has no reviews', async () => {
+        mockReview.findMany.mockResolvedValue([]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual([]);
+    });
+
+    it('ignores any ?userId query parameter and uses the JWT sub', async () => {
+        mockReview.findMany.mockResolvedValue([reviewForUser(1, 1, 'alice')]);
+
+        const res = await request(app)
+            .get('/reviews/me?userId=999')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        const callArg = mockReview.findMany.mock.calls[0][0];
+        expect(callArg.where).toEqual({ userId: 1 });
+    });
+
+    it('includes an author identity object on each review', async () => {
+        mockReview.findMany.mockResolvedValue([reviewForUser(1, 1, 'alice')]);
+
+        const res = await request(app)
+            .get('/reviews/me')
+            .set('x-test-user', JSON.stringify(authHeader('1')));
+
+        expect(res.status).toBe(200);
+        expect(res.body[0]).toHaveProperty('author');
+        expect(res.body[0].author).toEqual({ id: 1, username: 'alice' });
+        // raw user join should not be leaked
+        expect(res.body[0]).not.toHaveProperty('user');
+    });
+});

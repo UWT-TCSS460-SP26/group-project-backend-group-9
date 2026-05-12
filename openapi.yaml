@@ -25,8 +25,10 @@ tags:
       description: User-authored reviews of movies and shows
     - name: Users
       description: User endpoints
+    - name: Community
+      description: Aggregated community rankings joined with TMDB metadata
     - name: Issues
-      description: Issue reporting endpoints
+      description: Bug reports submitted by end users and triaged by admins
 
 paths:
     /status:
@@ -356,6 +358,249 @@ paths:
                                     error:
                                         type: string
                                         example: Network error
+
+    /issues:
+        post:
+            tags: [Issues]
+            summary: Submit a bug report
+            description: |
+                Public endpoint, no authentication required. Creates a new issue with
+                a default status of `Open`. The optional `reporterEmail` is stored but
+                never returned by any public response. The optional `severity` defaults
+                to `Minor` when omitted. Clients MUST NOT set `status`, `id`, `createdAt`,
+                or `updatedAt` on creation; doing so returns 400.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateIssueRequest'
+            responses:
+                '201':
+                    description: Issue submitted
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required: [id, message]
+                                properties:
+                                    id:
+                                        type: integer
+                                        example: 42
+                                    message:
+                                        type: string
+                                        example: Issue submitted successfully
+                '400':
+                    description: Validation failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to create issue
+        get:
+            tags: [Issues]
+            summary: List all issues (admin)
+            description: |
+                Admin-only. Returns every issue including the `reporterEmail` field so
+                admins can follow up on bug reports during triage. Sorted newest first.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Array of issues with admin fields included
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/IssueAdmin'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '403':
+                    description: Caller is not an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch issues
+
+    /issues/{id}:
+        parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                  type: integer
+              description: Issue ID
+        get:
+            tags: [Issues]
+            summary: Get an issue by ID (admin)
+            description: Admin-only. Returns the full issue including `reporterEmail`.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Issue found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IssueAdmin'
+                '400':
+                    description: Invalid issue ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '403':
+                    description: Caller is not an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+                '404':
+                    description: Issue not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch issue
+        patch:
+            tags: [Issues]
+            summary: Update an issue's status or severity (admin)
+            description: |
+                Admin-only. Accepts a partial body containing `status`, `severity`, or
+                both. At least one field must be provided; an empty body returns 400.
+                Unknown fields are rejected with 400.
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateIssueRequest'
+            responses:
+                '200':
+                    description: Issue updated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IssueAdmin'
+                '400':
+                    description: Validation failed (empty body, unknown field, or invalid enum value)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '403':
+                    description: Caller is not an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+                '404':
+                    description: Issue not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to update issue
+        delete:
+            tags: [Issues]
+            summary: Delete an issue (admin)
+            description: Admin-only. Permanently removes the issue.
+            security:
+                - bearerAuth: []
+            responses:
+                '204':
+                    description: Issue deleted
+                '400':
+                    description: Invalid issue ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationErrorResponse'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '403':
+                    description: Caller is not an admin
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+                '404':
+                    description: Issue not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MissingErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to delete issue
+
     /reviews:
         get:
             tags: [Reviews]
@@ -469,6 +714,45 @@ paths:
                                     error:
                                         type: string
                                         example: Failed to create review
+
+    /reviews/me:
+        get:
+            tags: [Reviews]
+            summary: List the caller's own reviews
+            description: |
+                Returns every review authored by the authenticated caller, newest first.
+                The caller is resolved from the JWT `sub` claim only; any `userId` query
+                parameter is ignored. An empty list is returned (200, not 404) when the
+                caller has no reviews. Each review includes an `author` identity object
+                so the shape is consistent with `GET /reviews` and `GET /reviews/{id}`.
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Array of the caller's reviews (newest first)
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Review'
+                '401':
+                    description: Missing or invalid bearer token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Failed to fetch reviews
+
     /reviews/{id}:
         parameters:
             - name: id
@@ -794,165 +1078,63 @@ paths:
                                     error:
                                         type: string
                                         example: Failed to delete user
-    /issues:
-        get:
-            tags: [Issues]
-            summary: List issues
-            description: |
-                Returns a paginated list of reviews, newest first. Optionally filter by
-                `tmdbId` and `mediaType` to fetch all reviews for a specific title.
-            security:
-                - bearerAuth: []
-            responses:
-                '200':
-                    description: List of reviews
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/IssueListResponse'
-                '500':
-                    description: Server error
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Internal server error
-        post:
-            tags: [Issues]
-            summary: Create an issue
-            description: |
-                Creates an issue.
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateIssueRequest'
-            responses:
-                '201':
-                    description: Review created
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Issue'
-                '400':
-                    description: Invalid input
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ValidationErrorResponse'
-                '401':
-                    description: Missing or invalid bearer token
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
-                '409':
-                    description: User has already reviewed this title
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ConflictErrorResponse'
-                '500':
-                    description: Server error
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Failed to create review
 
-    /issues/{id}:
-        parameters:
-            - name: id
-              in: path
-              required: true
-              schema:
-                  type: integer
-              description: Issue ID
+    /community:
         get:
-            tags: [Issues]
-            summary: Get an issue by ID
-            responses:
-                '200':
-                    description: Issue found
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Issue'
-                '400':
-                    description: Invalid issue ID
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ValidationErrorResponse'
-                '404':
-                    description: Issue not found
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/MissingErrorResponse'
-                '500':
-                    description: Server error
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Internal server error
-        put:
-            tags: [Issues]
-            summary: Update an issue status
+            tags: [Community]
+            summary: Community-ranked discovery feed
             description: |
-                Changes the status of an existing issue. Must be an Admin to update.
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateIssueRequest'
+                Returns titles ranked by community ratings or review volume, joined with
+                TMDB metadata (title, poster, release date). No authentication required.
+            parameters:
+                - name: sort
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [rating, reviews]
+                      default: rating
+                  description: |
+                      `rating` — sort by highest average community score (descending).
+                      `reviews` — sort by most reviews regardless of score (descending).
+                - name: minReviews
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 2
+                      minimum: 1
+                  description: Minimum number of reviews a title must have to appear in results.
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 1
+                      minimum: 1
+                  description: 1-indexed page number
+                - name: limit
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 20
+                      minimum: 1
+                      maximum: 50
+                  description: Page size (capped at 50)
             responses:
                 '200':
-                    description: Review updated
+                    description: Paginated community feed
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Issue'
+                                $ref: '#/components/schemas/CommunityFeedResponse'
                 '400':
-                    description: Validation failed
+                    description: Invalid query parameters
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ValidationErrorResponse'
-                '401':
-                    description: Missing or invalid bearer token
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UnauthenticatedErrorResponse'
-                '403':
-                    description: Caller is not an Admin
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UnauthorizedErrorResponse'
-                '404':
-                    description: Issue not found
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/MissingErrorResponse'
                 '500':
                     description: Server error
                     content:
@@ -962,7 +1144,7 @@ paths:
                                 properties:
                                     error:
                                         type: string
-                                        example: Internal server error
+                                        example: Failed to fetch community feed
 
 # ── Schemas ───────────────────────────────────────────────────
 
@@ -1227,29 +1409,26 @@ components:
                 results:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Issue'
-        IssueListResponse:
-            type: array
-            items:
-                $ref: '#/components/schemas/Issue'
+                        $ref: '#/components/schemas/Review'
+
         Issue:
             type: object
+            description: Public-facing issue shape. `reporterEmail` is intentionally omitted.
+            required: [id, title, description, severity, status, createdAt, updatedAt]
             properties:
+                id:
+                    type: integer
+                    example: 42
                 title:
                     type: string
-                    example: Your documentation is terrible!
+                    example: Login broken on Safari
                 description:
                     type: string
-                    example: You should use our documentation instead, it's much better.
-                reporterEmail:
-                    type: string
-                    format: email
-                    minLength: 1
-                    example: user@example.com
+                    example: Pressing the login button does nothing on Safari 17.4.
                 severity:
                     type: string
                     enum: [Minor, Major, Critical]
-                    example: Minor
+                    example: Major
                 status:
                     type: string
                     enum: [Open, InProgress, Resolved, Closed]
@@ -1257,38 +1436,92 @@ components:
                 createdAt:
                     type: string
                     format: date-time
-                    example: 2026-05-08T23:52:04.221Z
+                    example: 2026-05-10T14:00:00.000Z
                 updatedAt:
                     type: string
                     format: date-time
-                    example: 2026-05-08T23:52:04.221Z
+                    example: 2026-05-10T14:00:00.000Z
+
+        IssueAdmin:
+            type: object
+            description: |
+                Admin-only issue shape. Includes the public `Issue` fields plus
+                `reporterEmail` so admins can follow up on bug reports during triage.
+            required: [id, title, description, severity, status, createdAt, updatedAt]
+            properties:
+                id:
+                    type: integer
+                    example: 42
+                title:
+                    type: string
+                    example: Login broken on Safari
+                description:
+                    type: string
+                    example: Pressing the login button does nothing on Safari 17.4.
+                severity:
+                    type: string
+                    enum: [Minor, Major, Critical]
+                    example: Major
+                status:
+                    type: string
+                    enum: [Open, InProgress, Resolved, Closed]
+                    example: Open
+                reporterEmail:
+                    type: string
+                    format: email
+                    nullable: true
+                    example: reporter@example.com
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: 2026-05-10T14:00:00.000Z
+                updatedAt:
+                    type: string
+                    format: date-time
+                    example: 2026-05-10T14:00:00.000Z
+
         CreateIssueRequest:
             type: object
             required: [title, description]
             properties:
                 title:
                     type: string
-                    example: Your documentation is terrible!
+                    minLength: 1
+                    maxLength: 255
+                    example: Login broken on Safari
                 description:
                     type: string
-                    example: You should use our documentation instead, it's much better.
+                    minLength: 1
+                    maxLength: 5000
+                    example: Pressing the login button does nothing on Safari 17.4.
                 reporterEmail:
                     type: string
                     format: email
-                    example: user@example.com
+                    nullable: true
+                    example: reporter@example.com
                 severity:
                     type: string
                     enum: [Minor, Major, Critical]
                     default: Minor
-                    example: Minor
+                    example: Major
+
         UpdateIssueRequest:
             type: object
-            required: [status]
+            description: |
+                At least one of `status` or `severity` must be supplied. Unknown fields
+                are rejected with 400.
+            minProperties: 1
+            additionalProperties: false
             properties:
                 status:
                     type: string
                     enum: [Open, InProgress, Resolved, Closed]
-                    example: Open
+                    example: Resolved
+                severity:
+                    type: string
+                    enum: [Minor, Major, Critical]
+                    example: Critical
+
         User:
             type: object
             properties:
@@ -1360,3 +1593,72 @@ components:
                 error:
                     type: string
                     example: Conflicting resource already exists
+
+        TmdbMeta:
+            type: object
+            nullable: true
+            description: |
+                TMDB metadata for the title. `null` if the title has been removed from
+                TMDB since the reviews were submitted.
+            properties:
+                title:
+                    type: string
+                    example: Nimona
+                poster:
+                    type: string
+                    nullable: true
+                    example: https://image.tmdb.org/t/p/w500/2NQljeavtfl22207D1kxLpa4LS3.jpg
+                releaseDate:
+                    type: string
+                    example: '2023-06-23'
+
+        CommunityFeedItem:
+            type: object
+            properties:
+                tmdbId:
+                    type: integer
+                    example: 961323
+                mediaType:
+                    type: string
+                    enum: [MOVIE, TV]
+                    example: MOVIE
+                averageScore:
+                    type: number
+                    format: float
+                    minimum: 1
+                    maximum: 10
+                    example: 8.5
+                    description: Community average score, rounded to one decimal place.
+                reviewCount:
+                    type: integer
+                    example: 12
+                    description: Total number of reviews for this title.
+                tmdb:
+                    $ref: '#/components/schemas/TmdbMeta'
+            required: [tmdbId, mediaType, averageScore, reviewCount, tmdb]
+
+        CommunityFeedResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    example: 1
+                limit:
+                    type: integer
+                    example: 20
+                total:
+                    type: integer
+                    example: 45
+                    description: Total number of titles that meet the minReviews threshold.
+                sort:
+                    type: string
+                    enum: [rating, reviews]
+                    example: rating
+                minReviews:
+                    type: integer
+                    example: 2
+                results:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CommunityFeedItem'
+            required: [page, limit, total, sort, minReviews, results]

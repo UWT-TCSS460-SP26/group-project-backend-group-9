@@ -165,6 +165,20 @@ describe('Movie Routes', () => {
             const res = await request(app).get('/movies/999999999');
             expect(res.status).toBe(404);
         });
+
+        it('returns 500 when fetch throws', async () => {
+            mockFetch.mockRejectedValue(new Error('Network error'));
+
+            const res = await request(app).get('/movies/961323');
+            expect(res.status).toBe(500);
+        });
+
+        it('returns 500 when MOVIE_READ_KEY is not set', async () => {
+            delete process.env.MOVIE_READ_KEY;
+
+            const res = await request(app).get('/movies/961323');
+            expect(res.status).toBe(500);
+        });
     });
 
     describe('GET /movies/search?', () => {
@@ -196,6 +210,23 @@ describe('Movie Routes', () => {
 
             const res = await request(app).get('/movies/search');
             expect(res.status).toBe(500);
+        });
+
+        it('returns 500 when MOVIE_READ_KEY is not set', async () => {
+            delete process.env.MOVIE_READ_KEY;
+
+            const res = await request(app).get('/movies/search');
+            expect(res.status).toBe(500);
+        });
+
+        it.each([
+            ['non-date after', '?after=not-a-date'],
+            ['non-date before', '?before=not-a-date'],
+            ['invalid month in after', '?after=2023-13-01'],
+        ])('returns 400 for %s', async (_label, query) => {
+            const res = await request(app).get(`/movies/search${query}`);
+            expect(res.status).toBe(400);
+            expect(mockFetch).not.toHaveBeenCalled();
         });
     });
 });

@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { createIssue, getIssues, getIssueById, updateIssueStatus } from '../../controllers/issues';
+import {
+    createIssue,
+    getIssues,
+    getIssueById,
+    updateIssue,
+    deleteIssue,
+} from '../../controllers/issues';
 import { requireAuth, requireRoleAtLeast } from '../../middleware/requireAuth';
 import {
     validateNumericId,
@@ -10,15 +16,22 @@ import {
 const issueRoutes = Router();
 
 issueRoutes.post('/', validateIssueCreateBody, createIssue);
-issueRoutes.get('/', requireAuth, getIssues);
-issueRoutes.get('/:id', validateNumericId, getIssueById);
-issueRoutes.put(
+issueRoutes.get('/', requireAuth, requireRoleAtLeast('Admin'), getIssues);
+issueRoutes.get('/:id', requireAuth, requireRoleAtLeast('Admin'), validateNumericId, getIssueById);
+issueRoutes.patch(
     '/:id',
     requireAuth,
     requireRoleAtLeast('Admin'),
     validateNumericId,
     validateIssueUpdateBody,
-    updateIssueStatus
+    updateIssue
+);
+issueRoutes.delete(
+    '/:id',
+    requireAuth,
+    requireRoleAtLeast('Admin'),
+    validateNumericId,
+    deleteIssue
 );
 
 export { issueRoutes };

@@ -1,4 +1,4 @@
-import { RequestHandler, Request, Response, NextFunction } from 'express';
+﻿import { RequestHandler, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 
 declare global {
@@ -76,8 +76,21 @@ const IssueCreateSchema = z.object({
     severity: z.literal(['Minor', 'Major', 'Critical']).default('Minor'),
 });
 
-const IssueUpdateSchema = z.object({
-    status: z.literal(['Open', 'InProgress', 'Resolved', 'Closed']),
+const IssueUpdateSchema = z
+    .object({
+        status: z.literal(['Open', 'InProgress', 'Resolved', 'Closed']).optional(),
+        severity: z.literal(['Minor', 'Major', 'Critical']).optional(),
+    })
+    .strict()
+    .refine((obj) => obj.status !== undefined || obj.severity !== undefined, {
+        message: 'At least one of status or severity is required',
+    });
+
+const CommunityListSchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(50).default(20),
+    minReviews: z.coerce.number().int().min(0).default(0),
+    sort: z.literal(['rating', 'reviews']).default('rating'),
 });
 
 /**
@@ -117,6 +130,7 @@ export const validateReviewUpdateBody = validate('body', ReviewUpdateSchema);
 export const validateUserUpdateBody = validate('body', UserUpdateSchema);
 export const validateIssueCreateBody = validate('body', IssueCreateSchema);
 export const validateIssueUpdateBody = validate('body', IssueUpdateSchema);
+export const validateCommunityListParams = validate('query', CommunityListSchema);
 
 // --- Types inferred from schemas (no hand-written interfaces needed) ---
 
@@ -128,6 +142,7 @@ export type ReviewUpdate = z.infer<typeof ReviewUpdateSchema>;
 export type UserUpdate = z.infer<typeof UserUpdateSchema>;
 export type IssueCreate = z.infer<typeof IssueCreateSchema>;
 export type IssueUpdate = z.infer<typeof IssueUpdateSchema>;
+export type CommunityList = z.infer<typeof CommunityListSchema>;
 
 // Miscellaneous validation middleware
 

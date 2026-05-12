@@ -111,7 +111,24 @@ export const updateReview = async (request: Request, response: Response) => {
     }
 };
 
+export const getMyReviews = async (request: Request, response: Response) => {
+    try {
+        const localUser = await resolveLocalUser(request);
+
+        const reviews = await prisma.review.findMany({
+            where: { userId: localUser.id },
+            orderBy: { createdAt: 'desc' },
+            include: reviewInclude,
+        });
+
+        response.status(200).json(reviews.map(formatReview));
+    } catch {
+        response.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+};
+
 export const deleteReview = async (request: Request, response: Response) => {
+    const user = request.user!;
     const { id } = request.validated!.params! as { id: number };
 
     try {
@@ -122,10 +139,7 @@ export const deleteReview = async (request: Request, response: Response) => {
         }
         // can't be null because userId is a required field of a review. Any existing review will have an associated userId
         const existingUser = await resolveLocalUser(request);
-        if (
-            existingUser.id !== existingReview.userId &&
-            !hasRoleAtLeast(existingUser.role, 'Admin')
-        ) {
+        if (existingUser.id !== existingReview.userId && !hasRoleAtLeast(user.role, 'Admin')) {
             response.status(403).json({ error: 'Forbidden' });
             return;
         }
