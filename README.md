@@ -22,13 +22,13 @@ CORS allow-list:
 - `http://localhost:3000`
 
 To have an origin added to the allow-list, submit an issue
-at our [issue reporting endpoint](https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/report)
+at our [issue reporting endpoint](https://group-project-bug-tracker-front-end.vercel.app/)
 
 ## Reporting Bugs
 
 Bugs can be reported here:
 
-https://tcss460-team-9-api-72a4ffcce368.herokuapp.com/report
+https://group-project-bug-tracker-front-end.vercel.app/
 
 ## Quirks
 

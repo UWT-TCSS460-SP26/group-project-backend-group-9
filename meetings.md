@@ -177,3 +177,46 @@ Everyone was satisfied with their progress, no notes.
 Agreed to have everything done by Sunday EOD.
 
 Meeting concluded.
+
+## Meeting 8 — Monday, May 11 2026
+
+**Meeting Scribe:** Riley Hopper
+
+---
+
+### Agenda Item 1: Sprint Review
+
+The team went over the current sprint and discussed expectations for the frontend implementation.  
+The group also reviewed the previous week's sprint to ensure everything was properly documented and organized.
+
+Meeting concluded.
+
+## Meeting 9 — Tuesday, May 12 2026
+
+**Meeting Scribe:** Riley Hopper
+
+---
+
+### Agenda Item 1: Standup
+
+The team briefly checked in on current progress and discussed ongoing work.  
+No major blockers or concerns were brought up during the meeting.
+
+Meeting concluded.
+
+## Meeting 10 — Friday, May 15 2026
+
+**Meeting Scribe:** Riley Hopper
+
+---
+
+### Agenda Item 1: Frontend Review
+
+Each team member presented their frontend implementation, starting with Raiden, followed by Saeed, and then Riley.  
+After reviewing each version, the group agreed to move forward with Raiden's frontend design.
+
+### Agenda Item 2: Deployment Discussion
+
+The team discussed deployment plans.
+
+Meeting concluded.
